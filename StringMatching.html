@@ -1,0 +1,55 @@
+<html>
+    <head>
+        <script src = "StringMatching.js"></script>
+        <style>
+            button {
+                outline: none;
+                background-color: #bfbfbf;
+                border: 2px solid #000;
+                color: #000;
+                padding: 15px 32px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 4px 6px;
+                cursor: pointer;
+                border-radius: 10px;
+            }
+        </style>
+    </head>
+<body>
+    <h1>String Matching Tester</h1>
+    <h3>Implementing the <a href = "https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm">Needleman-Wunsch</a> Distance with Custom Weights</h3>
+
+    <table cellpadding=5>
+        <tr><td><h3>String 1</h3></td><td><input type="text" id = "string1" size="20"></input></td></tr>
+        <tr><td><h3>String 2</h3></td><td><input type="text" id = "string2" size="20"></input></td></tr>
+        <tr><td><h3>Alphabet</h3></td><td><input type="text" id = "alphabet" size="3"></td></tr>
+        <tr><td><h3>Pairwise<BR>Costs</h3></td><td><textarea id="costs" cols="60" rows = "5"></textarea></td></tr>
+        <tr><td colspan="2"><button type = "button" onclick = "call_matchStrings()" id="matchStrings">Match Strings</button>
+        <tr><td><h3>Optimal Matching Score</h3></td><td><input type="text" id = "matchingscore" size="3"></td></tr>
+    </table>
+
+    <table id="mytable" border = "1" cellpadding="5">
+    </table>
+
+    <script>
+        var string1_text = document.getElementById("string1");
+        var string2_text = document.getElementById("string2");
+        var alphabet_text = document.getElementById("alphabet");
+        var costs_text = document.getElementById("costs");
+        var matchingscore_text = document.getElementById("matchingscore");
+
+
+        function call_matchStrings() {
+            let string1 = string1_text.value;
+            let string2 = string2_text.value;
+            let alphabet = alphabet_text.value;
+            let costs = JSON.parse(costs_text.value);
+            matchingscore_text.value = matchStrings(string1, string2, alphabet, costs);
+        }
+    </script>
+
+</body>
+</html>
