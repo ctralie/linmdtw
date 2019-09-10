@@ -31,6 +31,10 @@
         <tr><td><h3>Optimal Matching Score</h3></td><td><input type="text" id = "matchingscore" size="3"></td></tr>
     </table>
 
+    <p id = "backtracing">
+
+    </p>
+
     <table id="mytable" border = "1" cellpadding="5">
     </table>
 
@@ -41,12 +45,16 @@
         var costs_text = document.getElementById("costs");
         var matchingscore_text = document.getElementById("matchingscore");
 
+        var backtracing = document.getElementById("backtracing");
+        backtracing.innerHTML = "Results of backtracing will go here";
+
 
         function call_matchStrings() {
             let string1 = string1_text.value;
             let string2 = string2_text.value;
             let alphabet = alphabet_text.value;
             let costs = JSON.parse(costs_text.value);
+            console.log(costs); //This outputs the object which holds the costs
             matchingscore_text.value = matchStrings(string1, string2, alphabet, costs);
         }
     </script>
