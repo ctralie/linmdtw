@@ -9,6 +9,7 @@
  * @param {string} y Second string (length N)
  * @param {2D array} D dynamic programming matrix (M+1 x N+1)
  */
+ 
 function outputTable(x, y, D) {
    // Output the table
    let table = document.getElementById("mytable");
@@ -65,8 +66,45 @@ function matchStrings(x, y, alphabet, costs) {
     // TODO: Perform the matching.  As part of the output, write
     // out the dynamic programming matrix to a table
 
-    // Setup a dummy 2D array for now to show how it will be output to a table
-    let D = [[0, 1, 2, 3], [1, 0, 0, 1], [1, 2, 3, 4], [-1, 2, 4, 0]];
+    //setting the length of the two strings in order to allocate memory
+    var mLength = x.length;
+    var nLength = y.length;
+
+    //allocating memory in a 2 dimensional array
+    for (var i = 0; i < mLength; i++){
+        D.push([]);
+        for (var j = 0; j < nLength; j++){
+            D[i].push(0);
+        }
+    }    
+
+    //----------------------Filling in the Table-----------------------
+    D[0][0] = 0; //first element will always be 0
+
+    //filling in the first row
+    for (var i = 0; i < mLength; i++){ //going through each item in row 1
+        var cost = 0; //temporary variable to hold the cost of each element
+        for(var j = 0; j < alphabet.length; j++){ //going through each element of the alphabet
+            if(x[i] == alphabet[j]){ //if the element in the first string == the current letter in the alphabet provided
+                cost = costs.alphabet[j]; //set the cost equal to where the deletion for that letter is in costs[]
+            }
+        }
+        D[0][i+1] = D[0][i] + cost; //the current cell's value = the cell to the left + the cost of the deletion
+    }
+
+    //filling in the first column
+    for (var i = 0; i < nLength; i++){ //going through each element in col 1
+        var cost = 0; //temporary variable to hold the cost of each item in col 1
+        for(var j = 0; j < alphabet.length; j++){ //going through each element of the alphabet for matching
+            if(y[i] == alphabet[j]){ //if the current letter in the second string == the current letter in the alphabet provided
+                cost = costs.alphabet[j]; //the cost of deleting that char from the string from the given costs
+            }
+        }
+        D[i+1][0] = D[i][0] + cost; //the current cell's value = the cell above + the cost of the deletion
+    }
+
+    //beatrice456734paul jack dadmommy  458965054589981 - helpful note from the kids I babysit
+    
 
     // TODO: Fill in the dynamic programming array properly
 
