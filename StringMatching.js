@@ -105,6 +105,15 @@ function matchStrings(x, y, alphabet, costs) {
 
     //beatrice456734paul jack dadmommy  458965054589981 - helpful note from the kids I babysit
     
+    //fill in the rest of the rest of the table
+
+    //go through each row and column
+
+    //check x[i] and y[j]'s contents and find them in the costs table
+    //"a" + "b" = null in the slack channel
+    
+
+
 
     // TODO: Fill in the dynamic programming array properly
 
