@@ -1,0 +1,134 @@
+<html>
+<body>
+
+    <table>
+        <tr>
+            <td>
+                <canvas id = "tricanvas" width = "600" height = "600" style="border:1px solid #000000;">
+                </canvas>
+            </td>
+            <td>
+                <table>
+                    <tr>
+                        <td>
+                        <button type = "button" onclick = "callChooseX()">Select X points</button>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                        <button type = "button" onclick = "callChooseY()">Select Y points</button>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+    </table>
+
+
+<script>
+	let canvas = document.getElementById('tricanvas');
+	let ctx = canvas.getContext("2d"); //For drawing
+	//Need this to disable that annoying menu that pops up on right click
+	canvas.addEventListener("contextmenu", function(e){ e.stopPropagation(); e.preventDefault(); return false; }); 
+
+	let xpoints = [];
+    let ypoints = [];
+    let selectingX = true;
+
+    function callChooseX() {
+        selectingX = true;
+    }
+    function callChooseY() {
+        selectingX = false;
+    }
+
+	/**
+	 * Return mouse position with respect to the canvas after
+	 * doing a coordinate transformation from global mouse coordinate
+	*/
+	function getMousePos(canvas, evt) {
+		let rect = canvas.getBoundingClientRect();
+		return {
+			X: evt.clientX - rect.left,
+			Y: evt.clientY - rect.top
+		};
+	}
+
+	function repaint() {
+		const dW = 5;
+		const W = canvas.width;
+		const H = canvas.height;
+		ctx.clearRect(0, 0, W, H); // Puts white over everything to clear it
+
+        // TODO: Change colors of X and Y
+		ctx.fillStyle = [1, 0, 0];
+		xpoints.forEach(function(p) {
+			ctx.fillRect(p[0]-dW, p[1]-dW, dW*2+1, dW*2+1);
+		});
+        ctx.stroke();
+
+        ctx.fillStyle = [0, 0, 1];
+		ypoints.forEach(function(p) {
+			ctx.fillRect(p[0]-dW, p[1]-dW, dW*2+1, dW*2+1);
+		});
+        ctx.stroke();
+
+		/*
+		    //Draw segment lengths
+			//TODO: Finish this
+			ctx.fillStyle = "#000000";
+			for (var i = 0; i < Ps.length; i++) {
+				ctx.beginPath();
+				ctx.moveTo(x0, y0);
+				ctx.lineTo(x1, y1);
+				ctx.stroke();        
+			}
+		*/
+
+	}
+
+	function selectPoint(evt) {
+		let mousePos = getMousePos(canvas, evt);
+		const X = mousePos.X;
+		const Y = mousePos.Y
+		let clickType = "LEFT";
+		evt.preventDefault();
+		if (evt.which) {
+			if (evt.which == 3) clickType = "RIGHT";
+			if (evt.which == 2) clickType = "MIDDLE";
+		}
+		else if (evt.button) {
+			if (evt.button == 2) clickType = "RIGHT";
+			if (evt.button == 4) clickType = "MIDDLE";
+		}
+
+		if (clickType == "LEFT") {
+            if (selectingX) {
+                xpoints.push([X, Y]);
+            }
+			else {
+                ypoints.push([X, Y]);
+            }
+		}
+		else if(clickType == "RIGHT") {
+            if (selectingX) {
+                xpoints.pop();
+            }
+            else {
+                ypoints.pop();
+            }
+		}
+
+		repaint();
+	}
+
+
+	canvas.addEventListener("mousedown", selectPoint);
+	canvas.addEventListener("touchstart", selectPoint); //Works on mobile devices!
+</script>
+
+
+</body>
+</html>
