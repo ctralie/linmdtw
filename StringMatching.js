@@ -48,7 +48,6 @@ function outputTable(x, y, D) {
    }
 }
 
-
 /**
  * A function to compute a matching of two strings using the Needleman-Wunsch Algorithm
  * 
@@ -57,15 +56,12 @@ function outputTable(x, y, D) {
  * @param {string} alphabet String consisting of alphabet (e.g. "ab" is only as and bs, where a is 0 and b is 1)
  * @param {dictionary} costs Costs of matching characters to each other.  
  *                      Let a be one type of character and b be another type of character.
-*                       Then costs[ab] is the cost of matching a to b
-                        costs[a] is the cost of deleting a
+ *                      Then costs[ab] is the cost of matching a to b
+ *                      costs[a] is the cost of deleting a
  * @return {number} Maximum possible score of matching x to y with a sequence of operation
-                    (TODO: Also return an optimal sequence of operations to match x to y)
+ * @return {string} The optimal path to match x and y
  */
 function matchStrings(x, y, alphabet, costs) {
-    // TODO: Perform the matching.  As part of the output, write
-    // out the dynamic programming matrix to a table
-
     //setting the length of the two strings in order to allocate memory
     var mLength = x.length;
     var nLength = y.length;
@@ -84,13 +80,13 @@ function matchStrings(x, y, alphabet, costs) {
     }    
 
     //----------------------Filling in the Table-----------------------
-    D[0][0] = 0; //first element will always be 0
 
     //filling in the first row
-    for (var i = 0; i < mLength; i++){ //going through each item in row 1
+    for (var i = 0; i < nLength; i++){ //going through each item in row 1 (string y)
         var cost = 0; //temporary variable to hold the cost of each element
-        for(var j = 0; j < alphabet.length; j++){ //going through each element of the alphabet
-            if(x[i] == alphabet[j]){ //if the element in the first string == the current letter in the alphabet provided
+
+        for(var j = 0; j < alphabet.length; j++){ //going through each element of the alphabet item
+            if(y[i] == alphabet[j]){ //if the element in y == the current letter in the alphabet provided
                 
                 //testing if there is a cost defined for this operation
                 if(costs[alphabet[j]] == null){
@@ -100,14 +96,16 @@ function matchStrings(x, y, alphabet, costs) {
                 }
             }
         }
+        //D[row][column]
         D[0][i+1] = D[0][i] + cost; //the current cell's value = the cell to the left + the cost of the deletion
     }
 
     //filling in the first column
-    for (var i = 0; i < nLength; i++){ //going through each element in col 1
+    for (var i = 0; i < mLength; i++){ //going through each element in col 1 (string x)
         var cost = 0; //temporary variable to hold the cost of each item in col 1
+
         for(var j = 0; j < alphabet.length; j++){ //going through each element of the alphabet for matching
-            if(y[i] == alphabet[j]){ //if the current letter in the second string == the current letter in the alphabet provided
+            if(x[i] == alphabet[j]){ //if the current letter in the second string == the current letter in the alphabet provided
                 
                 //testing if there is a cost defined for this operation
                 if(costs[alphabet[j]] == null){
@@ -117,110 +115,154 @@ function matchStrings(x, y, alphabet, costs) {
                 }
             }
         }
+
+        //D[row][col]
         D[i+1][0] = D[i][0] + cost; //the current cell's value = the cell above + the cost of the deletion
     }
 
     //beatrice456734paul jack dadmommy  458965054589981 - helpful note from the kids I babysit
     
-    //fill in the rest of the rest of the table
+    //fill in the rest of the table
 
     //go through each row and column
-    for (var i = 0; i < mLength - 1; i++){ //through the length of x - 1 because we already did the first element
-        //yes I know these variable names could possibly get confusing, but it's what makes sense to me right now
+    // x = row, mLength = x.length
+    for (var i = 1; i <= mLength; i++){ //through the length of y - 1 because we already did the first element
         var diagCost = 0; //temp int to hold the cost for the diagonal cost
         var leftCost = 0; //temp to hold the left cost
         var upperCost = 0; //temp to hold cost sent from above
 
-        for(var j = 0; j < nLength - 1; j++){//through the length of y - 1 ''
+        //y = col, nLength = y.length
+        for(var j = 1; j <= nLength; j++){//through the length of x - 1 ''
             //temp variables to hold the current correlating row and column
-            var currentX = x[i];
-            var currentY = y[j]; 
+            var currentY = y[j-1]; //row
+            var currentX = x[i-1]; //column
 
             //Testing if the current row letter has a deletion cost
-            if(costs[currentX] == null){
-                console.log("The user has not defined the cost for deleting " + x[i]);
-                //now checking the column
-                if (costs[currentY] == null){
-                    console.log("The user has not defined the cost for deleting " + y[j]);
-                }
+            if(costs[currentY] == null){
+                console.log("The user has not defined the cost for deleting " + currentX);
             }
-
-            //get the diagonal, left, and upper cost to get the optimal path
+            //now checking the column
+            if (costs[currentX] == null){
+                console.log("The user has not defined the cost for deleting " + currentY);
+            }
+            
+            //--------------------Calculating Left, Upper, And Diagonal Costs-------------------
 
             //left cost will always be the deletion of the corresponding row
             //so we find what the header of that row is(currentX) and add the cost of 
             //deleting it to the cost to the left
-            leftCost = D[i][j] + costs[currentX];
+            leftCost = D[i][j-1] + costs[currentY]; //j-1 because we go one column over
  
             //upper cost will always be the deletion of the corresponding column
-            upperCost = D[i][j] + costs[currentY];
+            upperCost = D[i-1][j] + costs[currentX]; // i-1 because we go one row up
 
             //diagonal cost will be a little bit different, considering it's the match
             //of the current row and column header
 
             //there is a possibility that the row/col header could be switched, so we're
             //checking for both here
-            if(costs[currentX + currentY] == null){
-                //if the first possibile match is undefined, check the other
-                if(costs[currentY + currentX] == null){
-                    console.log("The user has not defined for matching " + x[i] + " and " + y[j]);
-                }else{
-                    diagCost = D[i][j] + costs[currentY + currentX]
-                }
-            }else{
-                //if we find the match cost, set it
-                diagCost = D[i][j] + costs[currentX + currentY]
+            if(!(costs[currentX + currentY] == null)){ //if x+y is not null
+                diagCost = D[i-1][j-1] + costs[currentX + currentY];
+            }else if(!(costs[currentY + currentX] == null)){ // if y+x is not null
+                diagCost = D[i-1][j-1] + costs[currentY + currentX];
+            }else{//if both are undefined, send error
+                console.log("The user has not defined the cost for the matching of " + currentX + " and " + currentY);
             }
 
-            //now that we have each cost, we need to find the optimal path
-            
-            //if diagonal and either of the other two are equal set to diagonal cost
-            if(diagCost == leftCost || diagCost == upperCost){
-                //setting the cost
-                cost = diagCost;
-                //remembering the path we took
-                P[i][j] = 'd';
-            
-            }else if(leftCost == upperCost){
-                //set the cost to left
-                cost = leftCost;
-                //set the path
-                P[i][j] = 'l';
-            
+            //----------------------Finding The Optimal Path-------------------------
             //----------OPTIMAL DIAGONAL-------------
-            }else if(diagCost < leftCost){ //then check for upper cost
-                if(diagCost < upperCost){
-                    //then diagCost < both the left and upper, so it is the optimal path!
-                    cost = diagCost;
-                    //setting the path, 'd' for diagonal
-                    P[i][j] = 'd';
-                }
-            
+            if(diagCost > leftCost && diagCost > upperCost){ //diagonal must be the lowest of the three
+                cost = diagCost;
+                P[i][j] = 'd';
             //------------OPTIMAL LEFT-----------------
-            }else if(leftCost < diagCost){//left must be lower than diagonal and upper
-                if(leftCost < upperCost){
-                    cost = leftCost;
-                    P[i][j] = 'l';
-                }
-            
+            }else if(leftCost > diagCost && leftCost > upperCost){
+                cost = leftCost;
+                P[i][j] = 'l';
             //------------OPTIMAL UPPER-----------------
-            }else if(upperCost < diagCost){
-                if(upperCost < leftCost){
-                    cost = upperCost;
-                    P[i][j] = 'u';
-                }
+            }else if(upperCost > diagCost && upperCost > leftCost){
+                cost = upperCost;
+                P[i][j] = 'u';
+            //-----------Left and Upper the same----------------
+            }else if(upperCost == leftCost){
+                cost = leftCost; //just picking left
+                P[i][j] = 'l'; 
+            //-----------Diagonal and Left the same-------------
+            }else if(diagCost == leftCost){
+                cost = diagCost; //just picking diagonal
+                P[i][j] = 'd';
+            //-----------Diagonal and Upper the same----------
+            }else if (diagCost == upperCost){
+                cost = diagCost; //just picking diagonal
+                P[i][j] = 'd';
             }
+
             //so we have determined the cost and the path, put the cost into the table
-            //+1 to counteract the first row and column being done already
-            D[i+1][j+1] = cost;
+            D[i][j] = cost;
         }
     }
 
-    
-    // TODO: Fill in the dynamic programming array properly
-
-
     outputTable(x, y, D);
-    // TODO: Return the correct results
-    return 0.0;
+
+    var backtrace_list  = computeBacktracing(P,x,y);
+
+    return{
+        score: D[nLength][mLength],
+        backtrace: backtrace_list,
+    };
+}
+
+/**
+ * This function will use the path array to find the optimal path and store
+ * in an array of strings to later be printed on the form.
+ * 
+ * @param {string} path         all paths
+ * @param {string} x            the first string
+ * @param {string} y            the second string
+ * @return {string}  list_path, the list to be printed
+ */
+function computeBacktracing(path, x, y){
+    var list_print = [];
+
+    var currentX = "";
+    var currentY = "";
+
+    //starting at the veryyy end of the table
+    var j = y.length; //just to keep it consistent with the code above, j is the cols
+    var i = x.length;// and i is the rows
+
+    //creating a variable to keep track of how many elements are in the printing list
+    var n = 0;
+
+    do{
+        //the current x and y will be different every time so loop through
+        for(var l = 0; l < i; l++){
+            currentX += x[l];
+        }
+        
+        for(var m = 0; m < j; m++){
+            currentY += y[m];
+        }
+        //just printing the two strings for right now, forgetting the cost
+        list_print[n] = (currentX + " , " + currentY + ": ");
+
+        if(path[i][j] == 'd'){
+            //now go to the diagonal element
+            i --;
+            j --;
+        }else if(path[i][j] == 'u'){
+            //now go to the element above
+            i --; //one row up
+        }else if(path[i][j] == 'l'){
+            //now fo to the element to the left
+            j --; //one col over
+        }
+
+        n ++;
+        currentX = "";
+        currentY = "";
+    }while (i > 0 || j > 0);
+
+    list_print[list_print.length] = "0 , 0:";
+
+    return list_print;
 }
