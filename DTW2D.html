@@ -19,7 +19,25 @@
                         <td>
                         <button type = "button" onclick = "callChooseY()">Select Y points</button>
                         </td>
-                    </tr>
+					</tr>
+					
+					<tr>
+						<td>
+							<button type = "button" onclick = "drawLineX()">Draw Line X</button>
+						</td>
+					</tr>
+
+					<tr>
+						<td>
+							<button type = "button" onclick = "drawLineY()">Draw Line Y</button>
+						</td>
+					</tr>
+
+					<tr>
+						<td>
+							<button type = "button" onclick = "matchPoints()">Match Points</button>
+						</td>
+					</tr>
                 </table>
             </td>
         </tr>
@@ -30,6 +48,7 @@
 <script>
 	let canvas = document.getElementById('tricanvas');
 	let ctx = canvas.getContext("2d"); //For drawing
+
 	//Need this to disable that annoying menu that pops up on right click
 	canvas.addEventListener("contextmenu", function(e){ e.stopPropagation(); e.preventDefault(); return false; }); 
 
@@ -62,30 +81,135 @@
 		const H = canvas.height;
 		ctx.clearRect(0, 0, W, H); // Puts white over everything to clear it
 
-        // TODO: Change colors of X and Y
-		ctx.fillStyle = [1, 0, 0];
+		ctx.fillStyle = "red";
 		xpoints.forEach(function(p) {
 			ctx.fillRect(p[0]-dW, p[1]-dW, dW*2+1, dW*2+1);
 		});
         ctx.stroke();
 
-        ctx.fillStyle = [0, 0, 1];
+        ctx.fillStyle = "blue";
 		ypoints.forEach(function(p) {
 			ctx.fillRect(p[0]-dW, p[1]-dW, dW*2+1, dW*2+1);
 		});
         ctx.stroke();
+		
+	}
 
-		/*
-		    //Draw segment lengths
-			//TODO: Finish this
-			ctx.fillStyle = "#000000";
-			for (var i = 0; i < Ps.length; i++) {
-				ctx.beginPath();
-				ctx.moveTo(x0, y0);
-				ctx.lineTo(x1, y1);
-				ctx.stroke();        
+	function drawLineX(){
+		//Draw segment lengths for x
+		for (var i = 1; i < xpoints.length; i ++) {//i+=2 because each set of points is two elements long
+			X0 = xpoints[i-1][0]; 
+			Y0 = xpoints[i-1][1];
+			X1 = xpoints[i][0];
+			Y1 = xpoints[i][1];
+
+			ctx.fillStyle = "black";
+			ctx.beginPath();
+			ctx.moveTo(X0, Y0);
+			ctx.lineTo(X1, Y1);
+			ctx.stroke();        
+		}
+	}
+
+	function drawLineY(){
+		//Draw line segments for y
+		for(var i = 1; i < ypoints.length; i ++){
+			X0 = ypoints[i-1][0];
+			Y0 = ypoints[i-1][1];
+			X1 = ypoints[i][0];
+			Y1 = ypoints[i][1];
+
+			ctx.fillStyle = "black";
+			ctx.beginPath();
+			ctx.moveTo(X0, Y0);
+			ctx.lineTo(X1, Y1);
+			ctx.stroke(); 
+		}
+	}
+
+	function matchPoints(){
+		var xValue = 0;
+		var yValue = 1;
+
+		//creating a 2d array to hold the matching and distances
+		var distances = [];
+		var matches = [];	//will be filled with 0's, 0 = unmatched
+		
+		for (var i = 0; i < xpoints.length; i++){
+			distances.push([]);
+			matches.push([]);
+        	
+        	for (var j = 0; j < ypoints.length; j++){
+
+				distances[i][j] = computeDistance(xpoints[i][xValue], xpoints[i][yValue], 
+				ypoints[j][xValue], ypoints[j][yValue]);
+				
+				matches[i].push(0);
+        	}
+		} 	
+
+		//matching each point
+
+		//for every point in line x
+		for(var i = 0; i < xpoints.length-1; i++){
+			for(var j = 0; j < ypoints.length-1; j++){
+				//if the distance between xpoints[i] and ypoints[i] <= xpoints[i] and ypoints[j+1], then match them
+				var min = Math.min(distances[i][j], distances[i+1][j], distances[i][j+1], distances[i+1][j+1]);
+				
+				if(min == distances[i][j]){
+					matches[i][j] = 1; //match between x[i] and y[j]
+
+				}else if(min == distances[i+1][j]){
+					matches[i+1][j] = 1;
+
+				}else if(min == distances[i][j+1]){
+					matches[i][j+1] = 1;
+
+				}else if(min == distances[i+1][j+1]){
+					matches[i+1][j+1] = 1;
+				}
+
 			}
-		*/
+		}	
+
+		//making sure the first and last two point sets match
+		matches[0][0] = 1;
+		matches[xpoints.length-1][ypoints.length-1] = 1;
+
+		//now draw the line segments for these matches!!
+		drawMatches(matches);
+	}
+
+	function computeDistance(x1, y1, x2, y2){
+		//calculate the distance between the two points using euclidean distance
+		//||d|| = √( (x1 – y1)^2 + (x2 - y2)^2 )
+		var distance = Math.sqrt( Math.pow( (x1 - x2), 2) + Math.pow( (y1 - y2), 2) );
+
+		return distance;
+	}
+
+	function drawMatches(matchList){
+		for(var i = 0; i < matchList.length; i++){
+			for(var j = 0; j <matchList[i].length; j++){
+				
+				if(matchList[i][j] == 1){
+					X0 = xpoints[i][0];
+					Y0 = xpoints[i][1];
+					X1 = ypoints[j][0];
+					Y1 = ypoints[j][1];
+
+					//drawing the line
+					ctx.fillStyle = "green";
+
+					ctx.beginPath();
+					ctx.moveTo(X0, Y0);
+					ctx.lineTo(X1, Y1);
+					ctx.stroke();
+				}
+			}
+		}
+
+		
 
 	}
 
