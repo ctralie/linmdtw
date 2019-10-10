@@ -25,12 +25,12 @@ function matchPoints(xpoints, ypoints){
     accumulated_dists[0][0] = (distances[0][0]);
 
     //fill first row
-    for(var i = 1; i <= xpoints.length -1; i++){
+    for(var i = 1; i <= ypoints.length -1; i++){
         accumulated_dists[0][i] = (distances[0][i] + accumulated_dists[0][i-1]);
     }
 
     //fill first col
-    for(var i = 1; i <= ypoints.length -1; i++){
+    for(var i = 1; i <= xpoints.length -1; i++){
         accumulated_dists[i][0] = (distances[i][0] + accumulated_dists[i-1][0]);
     }
 

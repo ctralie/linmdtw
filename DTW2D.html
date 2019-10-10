@@ -35,7 +35,7 @@
 
 					<tr>
 						<td>
-							<button type = "button" onclick = "matchPoints()">Match Points</button>
+							<button type = "button" onclick = "doMatchPoints()">Match Points</button>
 						</td>
 					</tr>
                 </table>
@@ -108,10 +108,10 @@
 
 			//X and Y coordinates of the current point on path X
 			X0 = xpoints[currentX][0];
-			Y0 = ypoints[currentX][1];
+			Y0 = xpoints[currentX][1];
 			
 			//X and Y coordinates of the current point on path Y
-			X1 = xpoints[currentY][0];
+			X1 = ypoints[currentY][0];
 			Y1 = ypoints[currentY][1];
 
 			//eventually want to call a function that does this
