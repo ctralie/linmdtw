@@ -44,10 +44,7 @@
         var alphabet_text = document.getElementById("alphabet");
         var costs_text = document.getElementById("costs");
         var matchingscore_text = document.getElementById("matchingscore");
-
-        var backtracing = document.getElementById("backtracing");
-        backtracing.innerHTML = "Results of backtracing will go here";
-
+        var returnValues;
 
         function call_matchStrings() {
             let string1 = string1_text.value;
@@ -55,8 +52,19 @@
             let alphabet = alphabet_text.value;
             let costs = JSON.parse(costs_text.value);
             console.log(costs); //This outputs the object which holds the costs
-            matchingscore_text.value = matchStrings(string1, string2, alphabet, costs);
+            returnValues = matchStrings(string1, string2, alphabet, costs);
+            matchingscore_text.value = returnValues.score;
+            backtrace_list = returnValues.backtrace;
+            
+            var backtracing = document.getElementById("backtracing");
+            backtracing.innerHTML = "Results of the backtracing: ";
+
+            for(var i = 0; i < backtrace_list.length; i++){
+                backtracing.innerHTML += ("<BR>" + backtrace_list[i]);
+            }
         }
+
+        
     </script>
 
 </body>

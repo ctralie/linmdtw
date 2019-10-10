@@ -234,7 +234,7 @@ function computeBacktracing(path, x, y){
     var n = 0;
 
     do{
-        //the current x and y will be different every time so loop through
+        //holding the current string of the backtracing
         for(var l = 0; l < i; l++){
             currentX += x[l];
         }
@@ -242,6 +242,7 @@ function computeBacktracing(path, x, y){
         for(var m = 0; m < j; m++){
             currentY += y[m];
         }
+
         //just printing the two strings for right now, forgetting the cost
         list_print[n] = (currentX + " , " + currentY + ": ");
 
@@ -260,6 +261,10 @@ function computeBacktracing(path, x, y){
         n ++;
         currentX = "";
         currentY = "";
+
+        console.log("i: " + i);
+        console.log("j: " + j);
+
     }while (i > 0 || j > 0);
 
     list_print[list_print.length] = "0 , 0:";
