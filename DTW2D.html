@@ -38,6 +38,12 @@
 							<button type = "button" onclick = "doMatchPoints()">Match Points</button>
 						</td>
 					</tr>
+					<tr>
+						<td>
+							<input type = "checkbox"> Subsequence
+						</td>
+					</tr>
+
                 </table>
             </td>
         </tr>
@@ -75,7 +81,12 @@
 	}
 
 	function doMatchPoints(){
-		matchList = matchPoints(xpoints, ypoints);
+		var isSubSequence = false;
+
+		//if(checkbox == checked) then{
+			let isSubSequence = true;
+		//}
+		matchList = matchPoints(xpoints, ypoints, isSubSequence);
 
 		repaint(matchList);
 	}
@@ -152,11 +163,6 @@
 			ctx.lineTo(X1, Y1);
 			ctx.stroke(); 
 		}
-	}
-
-	function drawMatches(matchList){
-
-		
 	}
 
 	function selectPoint(evt) {
