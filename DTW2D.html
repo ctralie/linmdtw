@@ -40,7 +40,7 @@
 					</tr>
 					<tr>
 						<td>
-							<input type = "checkbox"> Subsequence
+							<input type = "checkbox" id="subsequenceCheckbox"> Subsequence
 						</td>
 					</tr>
 
@@ -80,12 +80,13 @@
 		};
 	}
 
+    let subsequenceCheckbox = document.getElementById("subsequenceCheckbox");
 	function doMatchPoints(){
-		var isSubSequence = false;
+		let isSubSequence = false;
 
-		//if(checkbox == checked) then{
-			let isSubSequence = true;
-		//}
+		if(subsequenceCheckbox.checked) {
+			isSubSequence = true;
+		}
 		matchList = matchPoints(xpoints, ypoints, isSubSequence);
 
 		repaint(matchList);
