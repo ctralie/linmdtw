@@ -1,3 +1,17 @@
+/**
+ * A parallel implementation of DTW
+ * 
+ * @param {*} xpoints 
+ * @param {*} ypoints 
+ * @param {*} isSubSequence 
+ * 
+ * @returns {float} Cost (Start by just computing the cost,     
+ *                      and compare to lower right element in accumulated cost for full DTW)
+ */
+function matchPointsParallel(xpoints, ypoints, isSubSequence) {
+
+}
+
 function matchPoints(xpoints, ypoints, isSubSequence){
     var xValue = 0;
     var yValue = 1;
