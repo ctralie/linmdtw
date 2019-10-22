@@ -11,25 +11,25 @@
                 <table>
                     <tr>
                         <td>
-                        <button type = "button" onclick = "callChooseX()">Select X points</button>
+                        	<button type = "button" onclick = "callChooseX()">Select X points</button>
                         </td>
                     </tr>
 
                     <tr>
                         <td>
-                        <button type = "button" onclick = "callChooseY()">Select Y points</button>
+                       		<button type = "button" onclick = "callChooseY()">Select Y points</button>
                         </td>
 					</tr>
 					
 					<tr>
 						<td>
-							<button type = "button" onclick = "drawLineX()">Draw Line X</button>
+							<button type = "button" onclick = "drawLine(xpoints)">Draw Line X</button>
 						</td>
 					</tr>
 
 					<tr>
 						<td>
-							<button type = "button" onclick = "drawLineY()">Draw Line Y</button>
+							<button type = "button" onclick = "drawLine(ypoints)">Draw Line Y</button>
 						</td>
 					</tr>
 
@@ -80,30 +80,47 @@
 		};
 	}
 
-    let subsequenceCheckbox = document.getElementById("subsequenceCheckbox");
+	let subsequenceCheckbox = document.getElementById("subsequenceCheckbox");
+	/**
+	 * This function is called to compute the matching, it will set whether it is
+	 * a subsequence or not, and will pass the matching list on to the repaint method
+	 * that will draw the segments between the matching points.
+	 */ 
 	function doMatchPoints(){
 		let isSubSequence = false;
 
+		//if the checkbox is checked then it's a subsequence
 		if(subsequenceCheckbox.checked) {
 			isSubSequence = true;
 		}
+		
+		//setting the match list
 		matchList = matchPoints(xpoints, ypoints, isSubSequence);
 
+		//calling repaint to draw the matches
 		repaint(matchList);
 	}
 
+	/**
+	 * This function redraws the html canvas each time a point is chosen, and after
+	 * the point matches have been computed.
+	 * 
+	 * @param (num)	matchList	-- the list of points to draw segments between
+	 */ 
 	function repaint(matchList){
 		const dW = 5;
 		const W = canvas.width;
 		const H = canvas.height;
 		ctx.clearRect(0, 0, W, H); // Puts white over everything to clear it
 
+		//drawing the X points
 		ctx.fillStyle = "red";
 		xpoints.forEach(function(p) {
 			ctx.fillRect(p[0]-dW, p[1]-dW, dW*2+1, dW*2+1);
 		});
-        ctx.stroke();
-
+		ctx.stroke();
+		
+		//drawing the Y points
         ctx.fillStyle = "blue";
 		ypoints.forEach(function(p) {
 			ctx.fillRect(p[0]-dW, p[1]-dW, dW*2+1, dW*2+1);
@@ -134,35 +151,24 @@
 		}
 	}
  
-	function drawLineX(){
+	/**
+	 * This function is called to draw a line between a set of points on the canvas
+	 * 
+	 * @param (num)	pointList -- the list of points to draw line segments between
+	 */ 
+	function drawLine(pointList){
 		//Draw segment lengths for x
-		for (var i = 1; i < xpoints.length; i ++){//i+=2 because each set of points is two elements long
-			X0 = xpoints[i-1][0]; 
-			Y0 = xpoints[i-1][1];
-			X1 = xpoints[i][0];
-			Y1 = xpoints[i][1];
+		for (var i = 1; i < pointList.length; i ++){
+			X0 = pointList[i-1][0]; 
+			Y0 = pointList[i-1][1];
+			X1 = pointList[i][0];
+			Y1 = pointList[i][1];
 
 			ctx.fillStyle = "black";
 			ctx.beginPath();
 			ctx.moveTo(X0, Y0);
 			ctx.lineTo(X1, Y1);
 			ctx.stroke();        
-		}
-	}
-
-	function drawLineY(){
-		//Draw line segments for y
-		for(var i = 1; i < ypoints.length; i ++){
-			X0 = ypoints[i-1][0];
-			Y0 = ypoints[i-1][1];
-			X1 = ypoints[i][0];
-			Y1 = ypoints[i][1];
-
-			ctx.fillStyle = "black";
-			ctx.beginPath();
-			ctx.moveTo(X0, Y0);
-			ctx.lineTo(X1, Y1);
-			ctx.stroke(); 
 		}
 	}
 
