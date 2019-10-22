@@ -24,6 +24,8 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence) {
  * @returns matches -- the list of matched points
  */
 function matchPoints(xpoints, ypoints, isSubSequence){
+    let i = 0;
+    let j = 0;
     var xValue = 0;
     var yValue = 1;
 
@@ -33,11 +35,11 @@ function matchPoints(xpoints, ypoints, isSubSequence){
     var accumulated_dists = [];
 
     //allocating memory for accumulated_dists and populating the regular dists
-    for (var i = 0; i < xpoints.length; i++){
+    for (i = 0; i < xpoints.length; i++){
         distances.push([]);
         accumulated_dists.push([]);
         
-        for (var j = 0; j < ypoints.length; j++){
+        for (j = 0; j < ypoints.length; j++){
 
             //getting the euclidean distance for the table
             distances[i][j] = computeDistance(xpoints[i][xValue], xpoints[i][yValue], 
@@ -56,24 +58,24 @@ function matchPoints(xpoints, ypoints, isSubSequence){
     //if sub sequence, set the first row as straight dists, if not, accumulated
     if(isSubSequence){
         //fill first row as straight distances for sub sequence
-        for (let i = 1; i <= ypoints.length - 1; i++){
+        for (i = 1; i <= ypoints.length - 1; i++){
             accumulated_dists[0][i] = distances[0][i];
         }
     }else{
         //fill first row as accumulated for non sub sequence
-        for(var i = 1; i <= ypoints.length -1; i++){
+        for(i = 1; i <= ypoints.length -1; i++){
             accumulated_dists[0][i] = (distances[0][i] + accumulated_dists[0][i-1]);
         }
     }
 
     //fill first col
-    for(var j = 1; j <= xpoints.length -1; j++){
+    for(j = 1; j <= xpoints.length -1; j++){
         accumulated_dists[j][0] = (distances[j][0] + accumulated_dists[j-1][0]);
     }
 
     //fill the rest of the accumulated cost array
-    for(var i = 1; i <= xpoints.length -1; i++){
-        for(var j = 1; j <= ypoints.length -1; j++){
+    for(i = 1; i <= xpoints.length -1; i++){
+        for(j = 1; j <= ypoints.length -1; j++){
             
             //the total distance will come from the minimum of the three options added to the distance
             accumulated_dists[i][j] = (Math.min(accumulated_dists[i-1][j-1], accumulated_dists[i-1][j], 
@@ -88,28 +90,28 @@ function matchPoints(xpoints, ypoints, isSubSequence){
     if(isSubSequence){
         //subSequence starts at the minimum element on the bottom row, not necessarily the last
         let minimumVal = accumulated_dists[xpoints.length-1][0]; //holds the value
-        let minimum = [xpoints.length-1, 0];            //holds the coordinates
+        let minimumCol = 0;            //holds the coordinates
 
         //finding the minimum
-        for(let j = 1; j < ypoints.length; j++){
+        for(let col = 1; col < ypoints.length; col++){
             //if the current distance is less than the minimum so far
-            if(accumulated_dists[xpoints.length-1][j] < minimumVal){
+            if(accumulated_dists[xpoints.length-1][col] < minimumVal){
                 //minimum is found and is stored in a variable
-                minimumVal = accumulated_dists[xpoints.length-1][j];
-                minimum = [xpoints.length - 1, j];
+                minimumVal = accumulated_dists[xpoints.length-1][col];
+                minimumCol = col;
             }
         }
 
         //starts the match list at the minimum
-        matches.push(minimum);
+        matches.push([xpoints.length-1, minimumCol]);
 
         //setting the loop boundaries
-        let i = minimum[0];
-        let j = minimum[1];
+        i = xpoints.length - 1;
+        j = minimumCol;
     }else{
         //starting at the end of the table
-        var i = xpoints.length - 1;
-        var j = ypoints.length - 1;
+        i = xpoints.length - 1;
+        j = ypoints.length - 1;
 
         //the last element in the table is where we start backtracing for the non-subSequence
         matches.push([xpoints.length-1,ypoints.length-1]);
@@ -132,7 +134,7 @@ function matchPoints(xpoints, ypoints, isSubSequence){
                     i--;
 
                 //if the next column over is the min, go to the next col
-                }else if (accumulated_dists[i][j-1] == Math.min(accumulated_dists[i-1][j-1], accumulated_dists[i-1][j],maccumulated_dists[i][j-1])){
+                }else if (accumulated_dists[i][j-1] == Math.min(accumulated_dists[i-1][j-1], accumulated_dists[i-1][j],accumulated_dists[i][j-1])){
                     j--;
 
                 //if neither of those are true, then it must be the diagonal, so we decrease i and j
