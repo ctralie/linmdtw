@@ -9,7 +9,54 @@
  *                      and compare to lower right element in accumulated cost for full DTW)
  */
 function matchPointsParallel(xpoints, ypoints, isSubSequence) {
+    //There are N+M-1 diagonals
+    //The max length of a diagonal is the minimum of M and N
 
+    //STEP 1: Initialize k = 0 and k = 1, i.e. points (0,0), (0,1), and (1,0).
+    let d0 = [];
+    let d1 = [];
+    let d2 = [];    //allocate enough memory for min(M,N)
+    let xValue = 0;
+    let yValue = 1;
+    let i = 0;
+    let j = 0;
+
+    //point (0,0)
+    d0.push(computeDistance(xpoints[0][xValue],xpoints[0][yValue],ypoints[0][xValue], ypoints[0][yValue]));
+    //point (1,0)
+    d1.push(computeDistance(xpoints[1][xValue],xpoints[1][yValue],ypoints[0][xValue], ypoints[0][yValue]));
+    //point(0,1)
+    d1.push(computeDistance(xpoints[0][xValue],xpoints[0][yValue],ypoints[1][xValue], ypoints[1][yValue]));
+    
+    //STEP 2: Start computing the next diagonals based on the ones before
+        //d0, d1, and d2 will hold the relevant diagonal data
+        //for k=2 to N+M-2{
+    for(let k = 2; k < ((xpoints.length + ypoints.length)-2); k++){
+        //par for l = 0 to min(M,N){ -- can be a regular for loop for now
+        for(let l = 0; l < Math.min(xpoints.length, ypoints.length); l++){
+
+            //-- C[i,j] = ||Xi-Yj|| using computeDistance
+            cost = computeDistance(xpoints[i][0],xpoints[i][1], ypoints[j][0], ypoints[j][1]);
+            
+            //d2[l] = (min{d1[l-1], d1[l], d0[l-2]} + C[i,j];
+            d2[l] = (Math.min(d1[l-1], d1[l], d0[l-2]) + cost)
+            
+            //keeping track of i and j by adding all the way down the column then across the row
+
+            //once i hits the end of the column, go across the row
+            if(i == xpoints.length - 1){
+                j++;
+            }else{
+                i++;
+            }
+        }
+        d0 = d1;
+        d1 = d2;
+        //d2 will be rewritten next time around
+    }
+
+    //STEP 3: take d2 and compare it to full DTW cost
+    return d2; //d2 will be the cost
 }
 
 /**
@@ -58,19 +105,19 @@ function matchPoints(xpoints, ypoints, isSubSequence){
     //if sub sequence, set the first row as straight dists, if not, accumulated
     if(isSubSequence){
         //fill first row as straight distances for sub sequence
-        for (i = 1; i <= ypoints.length - 1; i++){
-            accumulated_dists[0][i] = distances[0][i];
+        for (j = 1; j <= ypoints.length - 1; j++){
+            accumulated_dists[0][j] = distances[0][j];
         }
     }else{
         //fill first row as accumulated for non sub sequence
-        for(i = 1; i <= ypoints.length -1; i++){
-            accumulated_dists[0][i] = (distances[0][i] + accumulated_dists[0][i-1]);
+        for(j = 1; j <= ypoints.length -1; j++){
+            accumulated_dists[0][j] = (distances[0][j] + accumulated_dists[0][j-1]);
         }
     }
 
     //fill first col
-    for(j = 1; j <= xpoints.length -1; j++){
-        accumulated_dists[j][0] = (distances[j][0] + accumulated_dists[j-1][0]);
+    for(i = 1; i <= xpoints.length -1; i++){
+        accumulated_dists[i][0] = (distances[i][0] + accumulated_dists[i-1][0]);
     }
 
     //fill the rest of the accumulated cost array
@@ -121,11 +168,11 @@ function matchPoints(xpoints, ypoints, isSubSequence){
         do{
             //if i == 0, and it is not a subsequence, continue left along the row
             if(i == 0 && !isSubSequence){
-            j--;
+                j--;
 
             //if j == 0 continue up the column
             }else if (j == 0){
-            i --;
+                i --;
 
             //i != 0  and j != 0
             }else{

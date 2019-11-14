@@ -43,6 +43,11 @@
 							<input type = "checkbox" id="subsequenceCheckbox"> Subsequence
 						</td>
 					</tr>
+					<tr>
+						<td>
+							<button type = "button" onClick = "doMatchPointsParallel()">Parallel</button>
+						</td>
+					</tr>
 
                 </table>
             </td>
@@ -99,6 +104,15 @@
 
 		//calling repaint to draw the matches
 		repaint(matchList);
+
+		return matchList[xpoints.length-1][ypoints.length-1];
+	}
+
+	function doMatchPointsParallel(){
+
+		cost = matchPoints(xpoints, ypoints);
+
+		doMatchPoints();
 	}
 
 	/**
