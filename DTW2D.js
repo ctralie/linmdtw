@@ -41,9 +41,9 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence, debugging) {
     //point (0,0)
     d0.push(computeDistance(xpoints[0],ypoints[0]));
     //point (1,0)
-    d1.push(computeDistance(xpoints[1],ypoints[0]) + d0);
+    d1.push(computeDistance(xpoints[1],ypoints[0]) + d0[0]);
     //point(0,1)
-    d1.push(computeDistance(xpoints[0],ypoints[1]) + d0);
+    d1.push(computeDistance(xpoints[0],ypoints[1]) + d0[0]);
 
     if (debugging) {
         accumulatedDists[0][0] = d0[0];
@@ -56,7 +56,7 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence, debugging) {
         //for k=2 to N+M-2{
     let starti = 2;
     let startj = 0;
-    for(let k = 2; k < ((xpoints.length + ypoints.length)-2); k++){
+    for (let k = 2; k < ((xpoints.length + ypoints.length)-2); k++) {
         //par for l = 0 to min(M,N){ -- can be a regular for loop for now
         let i = starti;
         let j = startj;
@@ -132,13 +132,14 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence, debugging) {
             starti++;
         }
 
-        let d0 = d1;
-        let d1 = d2;
+        d0 = d1;
+        d1 = d2;
         //d2 will be rewritten next time around
     }
 
     //STEP 3: return the full table to compare
-    return {'accumulatedDists':accumulatedDists, 'cost':d2[0]};
+    // NOTE: Matches is empty for now
+    return {'accumulatedDists':accumulatedDists, 'cost':d2[0], 'matches':[]};
 }
 
 /**

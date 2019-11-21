@@ -58,11 +58,21 @@
             </td>
         </tr>
 
+        <tr>
+            <td colspan=2>
+                <canvas id = "debugCanvas" width = "800" height = "400" style="border:1px solid #000000;">
+                </canvas>
+            </td>
+        </tr>
+
     </table>
 
 <script>
 	let canvas = document.getElementById('tricanvas');
-	let ctx = canvas.getContext("2d"); //For drawing
+    let ctx = canvas.getContext("2d"); //For drawing
+    
+    let debugCanvas = document.getElementById('debugCanvas');
+    let debugCtx = debugCanvas.getContext("2d");
 
 	//Need this to disable that annoying menu that pops up on right click
 	canvas.addEventListener("contextmenu", function(e){ e.stopPropagation(); e.preventDefault(); return false; }); 
@@ -115,9 +125,12 @@
 
 	function doMatchPointsParallel(){
 
-		let result = matchPoints(xpoints, ypoints);
+		let resultPar = matchPointsParallel(xpoints, ypoints);
+        let result = matchPoints(xpoints, ypoints);
+        
+        repaint(result['matches']);
 
-		//doMatchPoints();
+        debugRepaint(result, resultPar);
 	}
 
 	/**
@@ -170,6 +183,76 @@
 		}
 	}
  
+    /**
+     * 
+     * Return the maximum value in a 2d array
+     */
+    function arrMax(C) {
+        let m = C[0][0];
+        for (let i = 0; i < C.length; i++) {
+            for (let j = 0; j < C[i].length; j++) {
+                if (C[i][j] > m) {
+                    m = C[i][j];
+                }
+            }
+        }
+        return m;
+    }
+
+    function drawMatrix(C, matches, max, dx, xoffset) {
+        if (xoffset === undefined) {
+            xoffset = 0;
+        }
+        // First draw the pixels
+        for (let i = 0; i < C.length; i++) {
+            for (let j = 0; j < C[i].length; j++) {
+                const g = 240*C[i][j]/max;
+                debugCtx.fillStyle = "rgba("+g+","+g+","+g+", 255)";
+                debugCtx.fillRect(j*dx+xoffset, i*dx, dx, dx);
+                debugCtx.stroke();
+            }
+        }
+        // Now draw the warping path
+        debugCtx.fillStyle = "blue";
+        for (let k = 0; k < matches.length; k++) {
+            let i = matches[k][0];
+            let j = matches[k][1];
+            debugCtx.fillRect(j*dx+xoffset+dx/3, i*dx+dx/3, dx/3, dx/3);
+        }
+    }
+
+    /**
+     * Draw the quadratic accumulated cost matrix with the warping
+     * path on the left, and the parallel cost matrix and warping
+     * path on the right
+     * 
+     * @param {object} Result An object holding accumulated costs and 
+     *                 matches from the original algorithm
+     * @param {object} resultPar An object holding accumulated costs and 
+     *                 matches from the parallel algorithm
+     */
+    function debugRepaint(result, resultPar){
+        const C1 = result['accumulatedDists'];
+        const C2 = resultPar['accumulatedDists'];
+		const W = debugCanvas.width;
+        const H = debugCanvas.height;
+		debugCtx.clearRect(0, 0, W, H); // Puts white over everything to clear it
+
+        // Step 1: Figure out canvas dimensions
+        // Figure out the max value, which will tell us how
+        // to scale the brightness of each pixel
+        let max = Math.max(arrMax(C1), arrMax(C2));
+        // Figure out the spatial range of each pixel so the images
+        // fit on the canvas as 1x2 subplots
+        N = Math.max(C1.length, C1[0].length);
+        N = Math.max(N, Math.max(C2.length, C2[0].length));
+        let dx = Math.floor(Math.min(W/2, H) / (N+2)); // Leave 2 cells for padding
+
+        // Step 2: Plot matrices
+        drawMatrix(C1, result['matches'], max, dx);
+        drawMatrix(C2, resultPar['matches'], max, dx, dx*(C1[0].length+2));
+	}
+
 	/**
 	 * This function is called to draw a line between a set of points on the canvas
 	 * 
