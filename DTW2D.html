@@ -37,6 +37,11 @@
 						<td>
 							<button type = "button" onclick = "doMatchPoints()">Match Points</button>
 						</td>
+                    </tr>
+					<tr>
+						<td>
+							<button type = "button" onclick = "interpolate10x()">Interpolate 10x</button>
+						</td>
 					</tr>
 					<tr>
 						<td>
@@ -218,7 +223,29 @@
             }
 		}
 		repaint([]);
-	}
+    }
+    
+    function interpolatePoints(points, N) {
+        let newpoints = [];
+        let dt = 1.0/N;
+        for (let i = 0; i < points.length-1; i++) {
+            for (let k = 0; k < N; k++) {
+                let t = dt*k;
+                newpoints.push([
+                points[i][0]*(1-t) + points[i+1][0]*t,
+                points[i][1]*(1-t) + points[i+1][1]*t
+            ]);
+            }
+
+        }
+        return newpoints;
+    }
+
+    function interpolate10x() {
+        xpoints = interpolatePoints(xpoints, 10);
+        ypoints = interpolatePoints(ypoints, 10);
+        repaint([]);
+    }
 
 
 	canvas.addEventListener("mousedown", selectPoint);
