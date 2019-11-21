@@ -184,7 +184,6 @@
 	}
  
     /**
-     * 
      * Return the maximum value in a 2d array
      */
     function arrMax(C) {
@@ -199,6 +198,17 @@
         return m;
     }
 
+    /**
+     * Draw an accumulated cost matrix as a grayscale image
+     * where brighter is higher cost.  Also superimpose a
+     * warping path if it is defined
+     * 
+     * @param {2d array} C Accumulated cost matrix
+     * @param {list of [i, j]} matches Warping path
+     * @param {float} max Max value (mapped to rgb(240, 240, 240))
+     * @param {int} dx Width of each pixel
+     * @param {int} xoffset Left/right offset of image
+    */
     function drawMatrix(C, matches, max, dx, xoffset) {
         if (xoffset === undefined) {
             xoffset = 0;
