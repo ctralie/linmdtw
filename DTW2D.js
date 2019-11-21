@@ -18,16 +18,23 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence) {
     let d2 = [];    //allocate enough memory for min(M,N)
     let xValue = 0;
     let yValue = 1;
-    let i = 0;
-    let j = 0;
+    
+    let starti = 0;
+    let startj = 0;
+    let k = 2;
+
+    let leftCost = 0;
+    let diagCost = 0;
+    let upCost = 0;
+    let optCost = 0;
 
     //point (0,0)
-    d0.push(computeDistance(xpoints[0][xValue],xpoints[0][yValue],ypoints[0][xValue], ypoints[0][yValue]));
+    d0.push(computeDistance(xpoints[0],ypoints[0]));
     //point (1,0)
-    d1.push(computeDistance(xpoints[1][xValue],xpoints[1][yValue],ypoints[0][xValue], ypoints[0][yValue]));
+    d1.push(computeDistance(xpoints[1],ypoints[0]) + d0);
     //point(0,1)
-    d1.push(computeDistance(xpoints[0][xValue],xpoints[0][yValue],ypoints[1][xValue], ypoints[1][yValue]));
-    
+    d1.push(computeDistance(xpoints[0],ypoints[1]) + d0);
+
     //STEP 2: Start computing the next diagonals based on the ones before
         //d0, d1, and d2 will hold the relevant diagonal data
         //for k=2 to N+M-2{
@@ -35,27 +42,77 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence) {
         //par for l = 0 to min(M,N){ -- can be a regular for loop for now
         for(let l = 0; l < Math.min(xpoints.length, ypoints.length); l++){
 
+            let i = starti - l;
+            let j = startj + l;
+
+            //-------------------------CORNER CASES--------------------------
+            if(startj == 0){
+                //left if it exists will be d1[l-1]
+                if(l >= 1){
+                    leftCost = d1[l-1];
+                }else{
+                    leftCost = 0;
+                }
+
+                //diag if it exists d0[l-1]
+                if(l >= 1 && i > 0){
+                    diagCost = d0[l-1];
+                }else{
+                    diagCost = 0;
+                }
+
+                //up if it exists d1[l]
+                if(i > 0){
+                    upCost = d1[l];
+                }else{
+                    upCost = 0;
+                }
+            }
+
+            if(starti == (xpoints.length - 1) && startj == 1){
+                leftCost = d1[l];
+
+                //up and diag if they exist
+                if(i>0){
+                    diagCost = d0[l];
+                    upCost = d1[l+1];
+                }else{
+                    diagCost = 0;
+                    upCost = 0;
+                }
+            }
+
+            if(starti == (xpoints.length - 1) && startj >= 1){
+                leftCost = d1[l];
+                diagCost = d0[l+1];
+                upCost = d1[l+1];
+            }
+
+            //optimal path cost
+            let optCost = Math.min(leftCost,diagCost,upCost);
+
             //-- C[i,j] = ||Xi-Yj|| using computeDistance
-            cost = computeDistance(xpoints[i][0],xpoints[i][1], ypoints[j][0], ypoints[j][1]);
+            cost = computeDistance(xpoints[i],ypoints[j]);
             
-            //d2[l] = (min{d1[l-1], d1[l], d0[l-2]} + C[i,j];
-            d2[l] = (Math.min(d1[l-1], d1[l], d0[l-2]) + cost)
+            //accumulated distance
+            d2[l] =  optCost + cost;
             
             //keeping track of i and j by adding all the way down the column then across the row
 
             //once i hits the end of the column, go across the row
             if(i == xpoints.length - 1){
-                j++;
+                startj++;
             }else{
-                i++;
+                starti++;
             }
         }
-        d0 = d1;
-        d1 = d2;
+
+        let d0 = d1;
+        let d1 = d2;
         //d2 will be rewritten next time around
     }
 
-    //STEP 3: take d2 and compare it to full DTW cost
+    //STEP 3: return the full table to compare
     return d2; //d2 will be the cost
 }
 
@@ -89,8 +146,7 @@ function matchPoints(xpoints, ypoints, isSubSequence){
         for (j = 0; j < ypoints.length; j++){
 
             //getting the euclidean distance for the table
-            distances[i][j] = computeDistance(xpoints[i][xValue], xpoints[i][yValue], 
-            ypoints[j][xValue], ypoints[j][yValue]);
+            distances[i][j] = computeDistance(xpoints[i], ypoints[j]);
             
             //allocating memory for accumulated distance table
             accumulated_dists[i].push(0);
@@ -214,7 +270,12 @@ function matchPoints(xpoints, ypoints, isSubSequence){
  * 
  * @returns the euclidean distance 
  */
-function computeDistance(x1, y1, x2, y2){
+function computeDistance(point1, point2){
+    let x1 = point1[0];
+    let y1 = point1[1];
+    let x2 = point2[0];
+    let y2 = point2[1];
+
     //calculate the distance between the two points using euclidean distance
     //||d|| = √( (x1 – y1)^2 + (x2 - y2)^2 )
     var distance = Math.sqrt( Math.pow( (x1 - x2), 2) + Math.pow( (y1 - y2), 2) );
