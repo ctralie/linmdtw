@@ -8,9 +8,23 @@
  * @returns {float} Cost (Start by just computing the cost,     
  *                      and compare to lower right element in accumulated cost for full DTW)
  */
-function matchPointsParallel(xpoints, ypoints, isSubSequence) {
+function matchPointsParallel(xpoints, ypoints, isSubSequence, debugging) {
+    if (debugging === undefined) {
+        debugging = true;
+    }
     //There are N+M-1 diagonals
     //The max length of a diagonal is the minimum of M and N
+
+    // STEP 0: (For Debugging) Fill in table to hold results
+    let accumulatedDists = [];
+    if (debugging) {
+        for (let i = 0; i < xpoints.length; i++) {
+            accumulatedDists.push([]);
+            for (let j = 0; j < ypoints.length; j++) {
+                accumulatedDists[i].push(0);
+            }
+        }
+    }
 
     //STEP 1: Initialize k = 0 and k = 1, i.e. points (0,0), (0,1), and (1,0).
     let d0 = [];
@@ -18,10 +32,6 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence) {
     let d2 = [];    //allocate enough memory for min(M,N)
     let xValue = 0;
     let yValue = 1;
-    
-    let starti = 0;
-    let startj = 0;
-    let k = 2;
 
     let leftCost = 0;
     let diagCost = 0;
@@ -35,16 +45,23 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence) {
     //point(0,1)
     d1.push(computeDistance(xpoints[0],ypoints[1]) + d0);
 
+    if (debugging) {
+        accumulatedDists[0][0] = d0[0];
+        accumulatedDists[1][0] = d1[0];
+        accumulatedDists[0][1] = d1[1];
+    }
+
     //STEP 2: Start computing the next diagonals based on the ones before
         //d0, d1, and d2 will hold the relevant diagonal data
         //for k=2 to N+M-2{
+    let starti = 2;
+    let startj = 0;
     for(let k = 2; k < ((xpoints.length + ypoints.length)-2); k++){
         //par for l = 0 to min(M,N){ -- can be a regular for loop for now
-        for(let l = 0; l < Math.min(xpoints.length, ypoints.length); l++){
-
-            let i = starti - l;
-            let j = startj + l;
-
+        let i = starti;
+        let j = startj;
+        let l = 0;
+        do {
             //-------------------------CORNER CASES--------------------------
             if(startj == 0){
                 //left if it exists will be d1[l-1]
@@ -96,15 +113,23 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence) {
             
             //accumulated distance
             d2[l] =  optCost + cost;
+
+            if (debugging) {
+                accumulatedDists[i][j] = d2[l];
+            }
             
             //keeping track of i and j by adding all the way down the column then across the row
 
-            //once i hits the end of the column, go across the row
-            if(i == xpoints.length - 1){
-                startj++;
-            }else{
-                starti++;
-            }
+            i -= 1;
+            j += 1;
+            l += 1;
+        }
+        while (i >= 0 && j < ypoints.length);
+        //once i hits the end of the column, go across the row
+        if(starti == xpoints.length - 1){
+            startj++;
+        }else{
+            starti++;
         }
 
         let d0 = d1;
@@ -113,7 +138,7 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence) {
     }
 
     //STEP 3: return the full table to compare
-    return d2; //d2 will be the cost
+    return {'accumulatedDists':accumulatedDists, 'cost':d2[0]};
 }
 
 /**
@@ -136,12 +161,12 @@ function matchPoints(xpoints, ypoints, isSubSequence){
     //creating a 2d array to hold the matching and distances
     var distances = [];
     var matches = [];	
-    var accumulated_dists = [];
+    var accumulatedDists = [];
 
-    //allocating memory for accumulated_dists and populating the regular dists
+    //allocating memory for accumulatedDists and populating the regular dists
     for (i = 0; i < xpoints.length; i++){
         distances.push([]);
-        accumulated_dists.push([]);
+        accumulatedDists.push([]);
         
         for (j = 0; j < ypoints.length; j++){
 
@@ -149,31 +174,31 @@ function matchPoints(xpoints, ypoints, isSubSequence){
             distances[i][j] = computeDistance(xpoints[i], ypoints[j]);
             
             //allocating memory for accumulated distance table
-            accumulated_dists[i].push(0);
+            accumulatedDists[i].push(0);
         }
     } 	
 
     //----------------------FILLING ACCUMULATED DISTANCE TABLE---------------------
 
     //the very first element
-    accumulated_dists[0][0] = (distances[0][0]);
+    accumulatedDists[0][0] = (distances[0][0]);
 
     //if sub sequence, set the first row as straight dists, if not, accumulated
     if(isSubSequence){
         //fill first row as straight distances for sub sequence
         for (j = 1; j <= ypoints.length - 1; j++){
-            accumulated_dists[0][j] = distances[0][j];
+            accumulatedDists[0][j] = distances[0][j];
         }
     }else{
         //fill first row as accumulated for non sub sequence
         for(j = 1; j <= ypoints.length -1; j++){
-            accumulated_dists[0][j] = (distances[0][j] + accumulated_dists[0][j-1]);
+            accumulatedDists[0][j] = (distances[0][j] + accumulatedDists[0][j-1]);
         }
     }
 
     //fill first col
     for(i = 1; i <= xpoints.length -1; i++){
-        accumulated_dists[i][0] = (distances[i][0] + accumulated_dists[i-1][0]);
+        accumulatedDists[i][0] = (distances[i][0] + accumulatedDists[i-1][0]);
     }
 
     //fill the rest of the accumulated cost array
@@ -181,8 +206,8 @@ function matchPoints(xpoints, ypoints, isSubSequence){
         for(j = 1; j <= ypoints.length -1; j++){
             
             //the total distance will come from the minimum of the three options added to the distance
-            accumulated_dists[i][j] = (Math.min(accumulated_dists[i-1][j-1], accumulated_dists[i-1][j], 
-                                                accumulated_dists[i][j-1]) + distances[i][j]);
+            accumulatedDists[i][j] = (Math.min(accumulatedDists[i-1][j-1], accumulatedDists[i-1][j], 
+                                                accumulatedDists[i][j-1]) + distances[i][j]);
             
         }
     }
@@ -192,15 +217,15 @@ function matchPoints(xpoints, ypoints, isSubSequence){
     //setting the looping variables based on sub sequence or non
     if(isSubSequence){
         //subSequence starts at the minimum element on the bottom row, not necessarily the last
-        let minimumVal = accumulated_dists[xpoints.length-1][0]; //holds the value
+        let minimumVal = accumulatedDists[xpoints.length-1][0]; //holds the value
         let minimumCol = 0;            //holds the coordinates
 
         //finding the minimum
         for(let col = 1; col < ypoints.length; col++){
             //if the current distance is less than the minimum so far
-            if(accumulated_dists[xpoints.length-1][col] < minimumVal){
+            if(accumulatedDists[xpoints.length-1][col] < minimumVal){
                 //minimum is found and is stored in a variable
-                minimumVal = accumulated_dists[xpoints.length-1][col];
+                minimumVal = accumulatedDists[xpoints.length-1][col];
                 minimumCol = col;
             }
         }
@@ -233,11 +258,11 @@ function matchPoints(xpoints, ypoints, isSubSequence){
             //i != 0  and j != 0
             }else{
                 //if the next row over is the min, go to the next row over
-                if(accumulated_dists[i-1][j] == Math.min(accumulated_dists[i-1][j-1], accumulated_dists[i-1][j], accumulated_dists[i][j-1])){
+                if(accumulatedDists[i-1][j] == Math.min(accumulatedDists[i-1][j-1], accumulatedDists[i-1][j], accumulatedDists[i][j-1])){
                     i--;
 
                 //if the next column over is the min, go to the next col
-                }else if (accumulated_dists[i][j-1] == Math.min(accumulated_dists[i-1][j-1], accumulated_dists[i-1][j],accumulated_dists[i][j-1])){
+                }else if (accumulatedDists[i][j-1] == Math.min(accumulatedDists[i-1][j-1], accumulatedDists[i-1][j],accumulatedDists[i][j-1])){
                     j--;
 
                 //if neither of those are true, then it must be the diagonal, so we decrease i and j
@@ -254,7 +279,7 @@ function matchPoints(xpoints, ypoints, isSubSequence){
         }while(i>0 || (j>0 && !isSubSequence))    
 
     //return the match list instead of calling the drawing
-    return matches;
+    return {'matches':matches, 'accumulatedDists':accumulatedDists};
 }
 
 /**

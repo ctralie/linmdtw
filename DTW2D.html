@@ -105,19 +105,19 @@
 		}
 		
 		//setting the match list
-		matchList = matchPoints(xpoints, ypoints, isSubSequence);
+		matches = matchPoints(xpoints, ypoints, isSubSequence)['matches'];
 
 		//calling repaint to draw the matches
-		repaint(matchList);
+		repaint(matches);
 
-		return matchList[xpoints.length-1][ypoints.length-1];
+		return matches[xpoints.length-1][ypoints.length-1];
 	}
 
 	function doMatchPointsParallel(){
 
-		cost = matchPoints(xpoints, ypoints);
+		let result = matchPoints(xpoints, ypoints);
 
-		doMatchPoints();
+		//doMatchPoints();
 	}
 
 	/**
