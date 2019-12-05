@@ -39,6 +39,9 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence, debugging) {
     let upCost = 0;
     let optCost = 0;
 
+
+    //these are always set correctly, phew
+
     //point (0,0)
     d0.push(computeDistance(xpoints[0],ypoints[0]));
     //point (1,0)
@@ -63,6 +66,7 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence, debugging) {
         let j = startj;
         let l = 0;
         do {
+            //somehow these are messing up again and I'm just not seeing it
             //-------------------------CORNER CASES--------------------------
             if(startj == 0){
                 //left if it exists will be d1[l-1]
@@ -72,6 +76,7 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence, debugging) {
                     leftCost = 0;
                 }
 
+                //this one might work?
                 //diag if it exists d0[l-1]
                 if(l >= 1 && i > 0){
                     diagCost = d0[l-1];
