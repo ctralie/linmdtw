@@ -216,8 +216,13 @@
         // First draw the pixels
         for (let i = 0; i < C.length; i++) {
             for (let j = 0; j < C[i].length; j++) {
-                const g = 240*C[i][j]/max;
-                debugCtx.fillStyle = "rgba("+g+","+g+","+g+", 255)";
+                if (isNaN(C[i][j])) {
+                    debugCtx.fillStyle = "rgba(255, 0, 0, 255)";
+                }
+                else {
+                    const g = 240*C[i][j]/max;
+                    debugCtx.fillStyle = "rgba("+g+","+g+","+g+", 255)";
+                }
                 debugCtx.fillRect(j*dx+xoffset, i*dx, dx, dx);
                 debugCtx.stroke();
             }

@@ -18,11 +18,14 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence, debugging) {
 
     // STEP 0: (For Debugging) Fill in table to hold results
     let accumulatedDists = [];
+    let distances = []; // Euclidean distances (for debugging)
     if (debugging) {
         for (let i = 0; i < xpoints.length; i++) {
             accumulatedDists.push([]);
+            distances.push([]);
             for (let j = 0; j < ypoints.length; j++) {
                 accumulatedDists[i].push(0);
+                distances[i].push(0);
             }
         }
     }
@@ -37,7 +40,6 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence, debugging) {
     let leftCost = 0;
     let diagCost = 0;
     let upCost = 0;
-    let optCost = 0;
 
 
     //these are always set correctly, phew
@@ -53,6 +55,9 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence, debugging) {
         accumulatedDists[0][0] = d0[0];
         accumulatedDists[1][0] = d1[0];
         accumulatedDists[0][1] = d1[1];
+        distances[0][0] = d0[0];
+        distances[1][0] = d1[0] - d0[0];
+        distances[0][1] = d1[1] - d0[0];
     }
 
     //STEP 2: Start computing the next diagonals based on the ones before
@@ -60,55 +65,48 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence, debugging) {
         //for k=2 to N+M-2{
     let starti = 2;
     let startj = 0;
-    for (let k = 2; k < ((xpoints.length + ypoints.length)-2); k++) {
+    for (let k = 2; k < ((xpoints.length + ypoints.length)-1); k++) {
         //par for l = 0 to min(M,N){ -- can be a regular for loop for now
         let i = starti;
         let j = startj;
         let l = 0;
         do {
+            leftCost = Infinity;
+            upCost = Infinity;
+            diagCost = Infinity;
             //somehow these are messing up again and I'm just not seeing it
             //-------------------------CORNER CASES--------------------------
             if(startj == 0){
                 //left if it exists will be d1[l-1]
                 if(l >= 1){
                     leftCost = d1[l-1];
-                }else{
-                    leftCost = 0;
                 }
-
                 //this one might work?
                 //diag if it exists d0[l-1]
                 if(l >= 1 && i > 0){
                     diagCost = d0[l-1];
-                }else{
-                    diagCost = 0;
                 }
-
                 //up if it exists d1[l]
                 if(i > 0){
                     upCost = d1[l];
-                }else{
-                    upCost = 0;
                 }
             }
 
             if(starti == (xpoints.length - 1) && startj == 1){
                 leftCost = d1[l];
-
                 //up and diag if they exist
                 if(i>0){
                     diagCost = d0[l];
                     upCost = d1[l+1];
-                }else{
-                    diagCost = 0;
-                    upCost = 0;
                 }
             }
 
-            if(starti == (xpoints.length - 1) && startj >= 1){
+            if(starti == (xpoints.length - 1) && startj > 1){
                 leftCost = d1[l];
-                diagCost = d0[l+1];
-                upCost = d1[l+1];
+                if (i > 0) {
+                    diagCost = d0[l+1];
+                    upCost = d1[l+1];
+                }
             }
 
             //optimal path cost
@@ -116,11 +114,13 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence, debugging) {
 
             //-- C[i,j] = ||Xi-Yj|| using computeDistance
             cost = computeDistance(xpoints[i],ypoints[j]);
+
             
             //accumulated distance
             d2[l] =  optCost + cost;
 
             if (debugging) {
+                distances[i][j] = cost;
                 accumulatedDists[i][j] = d2[l];
             }
             
@@ -140,12 +140,13 @@ function matchPointsParallel(xpoints, ypoints, isSubSequence, debugging) {
 
         d0 = d1;
         d1 = d2;
+        d2 = [];
         //d2 will be rewritten next time around
     }
 
     //STEP 3: return the full table to compare
     // NOTE: Matches is empty for now
-    return {'accumulatedDists':accumulatedDists, 'cost':d2[0], 'matches':[]};
+    return {'accumulatedDists':accumulatedDists, 'distances':distances, 'cost':d2[0], 'matches':[]};
 }
 
 /**
@@ -286,7 +287,7 @@ function matchPoints(xpoints, ypoints, isSubSequence){
         }while(i>0 || (j>0 && !isSubSequence))    
 
     //return the match list instead of calling the drawing
-    return {'matches':matches, 'accumulatedDists':accumulatedDists};
+    return {'matches':matches, 'accumulatedDists':accumulatedDists, 'distances':distances};
 }
 
 /**
