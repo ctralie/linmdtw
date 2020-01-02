@@ -39,42 +39,69 @@ def DTW(X, Y):
     path.reverse()
     return {'D':D, 'S':S, 'B':B, 'path':path}
 
-def DTWBacktrace(D, S):
-    M = D.shape[0]
-    N = D.shape[1]
-    SR = np.zeros_like(S)
-    # Fill in last three diagonals
-    starti = M-1
-    startj = N-1
-    for diag in range(3):
-        # Pull out appropriate distances
-        di = np.arange(starti, -1, -1)
-        dj = startj + np.arange(di.size)
-        dim = np.sum(dj < M) # Length of this diagonal
-        di = di[0:dim]
-        dj = dj[0:dim]
-        SR[di, dj] = S[di, dj]
-        if startj > 0:
-            startj -= 1
-        else:
-            starti -= 1
-    plt.imshow(SR)
-    plt.show()
+def get_diag_indices(M, N, k):
+    """
+    Compute the indices on a diagonal into indices on an accumulated
+    distance matrix
+    Parameters
+    ----------
+    M: int
+        Number of rows
+    N: int
+        Number of columns
+    k: int
+        Index of the diagonal
+    Returns
+    -------
+    i: ndarray(dim)
+        Row indices
+    j: ndarray(dim)
+        Column indices
+    """
+    starti = k
+    startj = 0
+    if k > M-1:
+        starti = M-1
+        startj = k - (M-1)
+    i = np.arange(starti, -1, -1)
+    j = startj + np.arange(i.size)
+    dim = np.sum(j < N) # Length of this diagonal
+    i = i[0:dim]
+    j = j[0:dim]
+    return i, j
+    
 
-def DTWPar(X, Y, debugging=False):
+def DTWPar(X, Y, k_save = -1, k_stop = -1, debugging=False):
+    """
+    Parameters
+    ----------
+    X: ndarray(M, d)
+        An M-dimensional Euclidean point cloud
+    Y: ndarray(N, d)
+        An N-dimensional Euclidean point cloud
+    k_save: int
+        Index of the diagonal d2 at which to save d0, d1, and d2
+    k_stop: int
+        Index of the diagonal d2 at which to stop computation
+    debugging: boolean
+        Whether to save the accumulated cost matrix
+    
+    Returns
+    -------
+    {
+        'cost': float
+            The optimal cost of the alignment (if computation didn't stop prematurely),
+        'S': ndarray(M, N)
+            The accumulated cost matrix (if debugging),
+        'd0':ndarray(min(M, N)), 'd1':ndarray(min(M, N)), 'd2':ndarray(min(M, N))
+            The saved rows if a save index was chosen
+    }
+    """
     M = X.shape[0]
     N = Y.shape[0]
-    K = min(M, N)
-    # The three diagonals
-    d0 = np.inf*np.ones(K)
-    d1 = np.inf*np.ones(K)
-    d2 = np.zeros(K)
-    starti = 2
-    startj = 0
     # Initialize first two diagonals and helper variables
-    d0[0] = np.sqrt(np.sum((X[0, :] - Y[0, :])**2))
-    d1[0] = np.sqrt(np.sum((X[1, :] - Y[0, :])**2)) + d0[0]
-    d1[1] = np.sqrt(np.sum((X[0, :] - Y[1, :])**2)) + d0[0]
+    d0 = np.array([np.sqrt(np.sum((X[0, :] - Y[0, :])**2))])
+    d1 = np.array([np.sqrt(np.sum((X[1, :] - Y[0, :])**2)), np.sqrt(np.sum((X[0, :] - Y[1, :])**2))]) + d0[0]
     
     # Store the result of each r2 in memory
     S = np.array([])
@@ -85,22 +112,19 @@ def DTWPar(X, Y, debugging=False):
         S[0, 1] = d1[1]
     
     # Loop through diagonals
+    res = {}
     for k in range(2, M+N-1):
-        d2 = np.inf*np.ones(K)
-        
-        # Pull out appropriate distances
-        i = np.arange(starti, -1, -1)
-        j = startj + np.arange(i.size)
-        dim = np.sum(j < N) # Length of this diagonal
-        i = i[0:dim]
-        j = j[0:dim]
+        i, j = get_diag_indices(M, N, k)
+        dim = i.size
+        d2 = np.inf*np.ones(dim)
         
         left_cost = np.inf*np.ones(dim)
         up_cost = np.inf*np.ones(dim)
         diag_cost = np.inf*np.ones(dim)
         
+        # Pull out appropriate distances
         ds = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
-        if startj == 0:
+        if j[0] == 0:
             left_cost[1::] = d1[0:dim-1]
             # l > 0, i > 0
             idx = np.arange(dim)[(np.arange(dim) > 0)*(i > 0)] 
@@ -108,34 +132,38 @@ def DTWPar(X, Y, debugging=False):
             # i > 0
             idx = np.arange(dim)[i > 0]
             up_cost[idx] = d1[idx]
-        elif starti == X.shape[0]-1 and startj == 1:
+        elif i[0] == X.shape[0]-1 and j[0] == 1:
             left_cost = d1[0:dim]
             # i > 0
             idx = np.arange(dim)[i > 0]
             diag_cost[idx] = d0[idx]
             up_cost[idx] = d1[idx+1]
-        elif starti == X.shape[0]-1 and startj > 1:
+        elif i[0] == X.shape[0]-1 and j[0] > 1:
             left_cost = d1[0:dim]
             idx = np.arange(dim)[i > 0]
             diag_cost[idx] = d0[idx+1]
             up_cost[idx] = d1[idx+1]
         
+        
         d2[0:dim] = np.minimum(np.minimum(left_cost, diag_cost), up_cost) + ds
         if debugging:
             S[i, j] = d2[0:dim]
-        if starti < M-1:
-            starti += 1
-        else:
-            startj += 1
+        if k == k_save:
+            res['d0'] = np.array(d0)
+            res['d1'] = np.array(d1)
+            res['d2'] = np.array(d2)
+        if k == k_stop:
+            break
+        # Shift diagonals
         d0 = np.array(d1)
         d1 = np.array(d2)
-        d2 = 0*d2
-    return {'cost':d2[0], 'S':S}
+    res['cost'] = d2[0]
+    res['S'] = S
+    return res
 
-
-N = 250
-t = 2*np.pi*np.linspace(0, 1, N)**2
-X = np.zeros((N, 2))
+M = 250
+t = 2*np.pi*np.linspace(0, 1, M)**2
+X = np.zeros((M, 2))
 X[:, 0] = np.cos(t)
 X[:, 1] = np.sin(2*t)
 N = 200
@@ -146,13 +174,41 @@ Y[:, 1] = 1.1*np.sin(2*t)
 
 res = DTW(X, Y)
 path = res['path']
-S = res['S']
+S2 = res['S']
+cost = S2[-1, -1]
 B = res['B']
 
-res = DTWPar(X, Y, debugging=True)
-S2 = res['S']
+K = X.shape[0]+Y.shape[0]-1
+k_save = int(np.round(K/2.0))
+res1 = DTWPar(X, Y, k_save=k_save, debugging=True)
+#cost = res1['cost']
+S = res1['S']
+
+k_save_rev = k_save
+if K%2 == 0:
+    k_save_rev += 1
+res2 = DTWPar(np.flipud(X), np.flipud(Y), k_save=k_save_rev, k_stop=k_save_rev)
+res2['d0'], res2['d2'] = res2['d2'], res2['d0']
+for d in ['d0', 'd1', 'd2']:
+    res2[d] = res2[d][::-1]
 
 
+for ki, d in enumerate(['d0', 'd1', 'd2']):
+    k = k_save - 2 + ki
+    i, j = get_diag_indices(M, N, k)
+    ds = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
+    diagsum = res1[d]+res2[d]-ds
+    l = np.argmin(diagsum)
+    row, col = i[l], j[l]
+    plt.subplot(3, 1, ki+1)
+    plt.plot(res1[d])
+    plt.plot(res2[d])
+    plt.plot(res1[d]+res2[d])
+    plt.title("%s, %.5g (optimal %.5g), (%i, %i), in path: %s"%(d, diagsum[l], cost, row, col, [row, col] in path))
+plt.tight_layout()
+plt.savefig("DiagSums_%i_%i.svg"%(M, N), bbox_inches='tight')
+
+"""
 plt.subplot(131)
 plt.imshow(S)
 plt.colorbar()
@@ -163,6 +219,7 @@ plt.subplot(133)
 plt.imshow(S-S2)
 plt.colorbar()
 plt.show()
+"""
 
 
 """
