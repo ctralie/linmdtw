@@ -1,12 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def getCSM(X, Y):
+def getCSMFast(X, Y):
     XSqr = np.sum(X**2, 1)
     YSqr = np.sum(Y**2, 1)
     D = XSqr[:, None] + YSqr[None, :] - 2*X.dot(Y.T)
     D[D < 0] = 0
     D = np.sqrt(D)
+    return D
+
+def getCSM(X, Y):
+    M = X.shape[0]
+    N = Y.shape[0]
+    D = np.zeros((M, N))
+    for i in range(M):
+        for j in range(N):
+            D[i, j] = np.sqrt(np.sum((X[i, :] - Y[j, :])**2))
     return D
 
 def DTW(X, Y):
@@ -171,6 +180,8 @@ t = 2*np.pi*np.linspace(0, 1, N)
 Y = np.zeros((N, 2))
 Y[:, 0] = 1.1*np.cos(t)
 Y[:, 1] = 1.1*np.sin(2*t)
+X = X*1000
+Y = Y*1000
 
 res = DTW(X, Y)
 path = res['path']
@@ -192,7 +203,10 @@ res2['d0'], res2['d2'] = res2['d2'], res2['d0']
 for d in ['d0', 'd1', 'd2']:
     res2[d] = res2[d][::-1]
 
-
+plt.scatter(np.array([p[1] for p in path]), np.array([p[0] for p in path]))
+i = 0
+j = 0
+l = 0
 for ki, d in enumerate(['d0', 'd1', 'd2']):
     k = k_save - 2 + ki
     i, j = get_diag_indices(M, N, k)
@@ -200,13 +214,18 @@ for ki, d in enumerate(['d0', 'd1', 'd2']):
     diagsum = res1[d]+res2[d]-ds
     l = np.argmin(diagsum)
     row, col = i[l], j[l]
-    plt.subplot(3, 1, ki+1)
-    plt.plot(res1[d])
-    plt.plot(res2[d])
-    plt.plot(res1[d]+res2[d])
-    plt.title("%s, %.5g (optimal %.5g), (%i, %i), in path: %s"%(d, diagsum[l], cost, row, col, [row, col] in path))
-plt.tight_layout()
-plt.savefig("DiagSums_%i_%i.svg"%(M, N), bbox_inches='tight')
+    plt.scatter([col], [row], 100, 'red', 'x')
+    plt.text(col, row, "%.5g"%diagsum[l])
+plt.title("Optimal: %.5g"%cost)
+j = j[l]
+i = i[l]
+plt.axis('equal')
+plt.xlim([j-3, j+3])
+plt.ylim([i-3, i+3])
+plt.gca().invert_yaxis()
+plt.show()
+#plt.tight_layout()
+#plt.savefig("DiagSums_%i_%i.svg"%(M, N), bbox_inches='tight')
 
 """
 plt.subplot(131)
