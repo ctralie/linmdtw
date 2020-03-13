@@ -190,7 +190,7 @@ cost = S2[-1, -1]
 B = res['B']
 
 K = X.shape[0]+Y.shape[0]-1
-k_save = int(np.round(K/2.0))
+k_save = int(np.ceil(K/2.0))
 res1 = DTWPar(X, Y, k_save=k_save, debugging=True)
 #cost = res1['cost']
 S = res1['S']
