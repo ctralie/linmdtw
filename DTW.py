@@ -197,6 +197,7 @@ def DTWPar_Backtrace(X, Y, cost, min_dim = 5):
     # Look for optimal cost over all 3 diagonals
     center_path = []
     center_costs = []
+    diagsums = []
     for ki, d in enumerate(['d0', 'd1', 'd2']):
         k = k_save - 2 + ki
         i, j = get_diag_indices(M, N, k)
@@ -204,8 +205,12 @@ def DTWPar_Backtrace(X, Y, cost, min_dim = 5):
         diagsum = res1[d]+res2[d]-ds
         l = np.argmin(diagsum)
         if np.allclose(diagsum[l], cost):
+            diagsums.append(diagsum[l])
             center_path.append([i[l], j[l]])
             center_costs.append([res1[d][l], res2[d][l]])
+    idx = np.argmin(np.array(diagsums))
+    center_costs = [center_costs[idx]]
+    center_path = [center_path[idx]]
     
     # Recursively compute left paths
     L = center_path[0]
@@ -242,7 +247,7 @@ def figure8_test():
     X = np.zeros((M, 2))
     X[:, 0] = np.cos(t)
     X[:, 1] = np.sin(2*t)
-    N = 810
+    N = 1201
     t = 2*np.pi*np.linspace(0, 1, N)
     Y = np.zeros((N, 2))
     Y[:, 0] = 1.1*np.cos(t)
@@ -267,7 +272,7 @@ def figure8_test():
     path2 = np.array(path2)
     path = np.array(path)
 
-    #print(np.allclose(path, path2))
+    print(np.allclose(path, path2))
     print("Cost path ordinary: ", np.sum(D[path[:, 0], path[:, 1]]))
     print("Cost path parallel: ", np.sum(D[path2[:, 0], path2[:, 1]]))
 
