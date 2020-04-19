@@ -1,21 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.io as sio
 
-def getCSMFast(X, Y):
+def getCSM(X, Y):
     XSqr = np.sum(X**2, 1)
     YSqr = np.sum(Y**2, 1)
     D = XSqr[:, None] + YSqr[None, :] - 2*X.dot(Y.T)
     D[D < 0] = 0
     D = np.sqrt(D)
-    return D
-
-def getCSM(X, Y):
-    M = X.shape[0]
-    N = Y.shape[0]
-    D = np.zeros((M, N))
-    for i in range(M):
-        for j in range(N):
-            D[i, j] = np.sqrt(np.sum((X[i, :] - Y[j, :])**2))
     return D
 
 def DTW(X, Y):
@@ -170,104 +162,117 @@ def DTWPar(X, Y, k_save = -1, k_stop = -1, debugging=False):
     res['S'] = S
     return res
 
-M = 250
-t = 2*np.pi*np.linspace(0, 1, M)**2
-X = np.zeros((M, 2))
-X[:, 0] = np.cos(t)
-X[:, 1] = np.sin(2*t)
-N = 200
-t = 2*np.pi*np.linspace(0, 1, N)
-Y = np.zeros((N, 2))
-Y[:, 0] = 1.1*np.cos(t)
-Y[:, 1] = 1.1*np.sin(2*t)
-X = X*1000
-Y = Y*1000
+def DTWPar_Backtrace(X, Y, cost, min_dim = 5):
+    """
+    Parameters
+    ----------
+    X: ndarray(N1, d)
+        An N1-dimensional Euclidean point cloud
+    Y: ndarray(N2, d)
+        An N2-dimensional Euclidean point cloud
+    cost: float
+        Known cost to match X to Y between start and end
+    min_dim: int
+        If one of the dimensions of the rectangular region
+        to the left or to the right is less than this number,
+        then switch to brute force
+    """
+    M = X.shape[0]
+    N = Y.shape[0]
+    K = M + N - 1
+    
+    # Do the forward computation
+    k_save = int(np.ceil(K/2.0))
+    res1 = DTWPar(X, Y, k_save=k_save, k_stop=k_save)
 
-res = DTW(X, Y)
-path = res['path']
-S2 = res['S']
-cost = S2[-1, -1]
-B = res['B']
+    # Do the backward computation
+    k_save_rev = k_save
+    if K%2 == 0:
+        k_save_rev += 1
+    res2 = DTWPar(np.flipud(X), np.flipud(Y), k_save=k_save_rev, k_stop=k_save_rev)
+    res2['d0'], res2['d2'] = res2['d2'], res2['d0']
+    for d in ['d0', 'd1', 'd2']:
+        res2[d] = res2[d][::-1]
+    
+    # Look for optimal cost over all 3 diagonals
+    center_path = []
+    center_costs = []
+    for ki, d in enumerate(['d0', 'd1', 'd2']):
+        k = k_save - 2 + ki
+        i, j = get_diag_indices(M, N, k)
+        ds = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
+        diagsum = res1[d]+res2[d]-ds
+        l = np.argmin(diagsum)
+        if np.allclose(diagsum[l], cost):
+            center_path.append([i[l], j[l]])
+            center_costs.append([res1[d][l], res2[d][l]])
+    
+    # Recursively compute left paths
+    L = center_path[0]
+    XL = X[0:L[0]+1, :]
+    YL = Y[0:L[1]+1, :]
+    left_path = []
+    if L[0] < min_dim or L[1] < min_dim:
+        left_path = DTW(XL, YL)['path']
+    else:
+        left_path = DTWPar_Backtrace(XL, YL, center_costs[0][0], min_dim)
+    path = left_path[0:-1] + center_path
+    
+    # Recursively compute right paths
+    R = center_path[-1]
+    XR = X[R[0]::, :]
+    YR = Y[R[1]::, :]
+    right_path = []
+    if XR.shape[0] < min_dim or YR.shape[0] < min_dim:
+        right_path = DTW(XR, YR)['path']
+    else:
+        right_path = DTWPar_Backtrace(XR, YR, center_costs[-1][1], min_dim)
+    right_path = [[i + R[0], j + R[1]] for [i, j] in right_path]
+    path = path + right_path[1::]
 
-K = X.shape[0]+Y.shape[0]-1
-k_save = int(np.ceil(K/2.0))
-res1 = DTWPar(X, Y, k_save=k_save, debugging=True)
-#cost = res1['cost']
-S = res1['S']
+    return path
+    
 
-k_save_rev = k_save
-if K%2 == 0:
-    k_save_rev += 1
-res2 = DTWPar(np.flipud(X), np.flipud(Y), k_save=k_save_rev, k_stop=k_save_rev)
-res2['d0'], res2['d2'] = res2['d2'], res2['d0']
-for d in ['d0', 'd1', 'd2']:
-    res2[d] = res2[d][::-1]
+        
 
-plt.scatter(np.array([p[1] for p in path]), np.array([p[0] for p in path]))
-i = 0
-j = 0
-l = 0
-for ki, d in enumerate(['d0', 'd1', 'd2']):
-    k = k_save - 2 + ki
-    i, j = get_diag_indices(M, N, k)
-    ds = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
-    diagsum = res1[d]+res2[d]-ds
-    l = np.argmin(diagsum)
-    row, col = i[l], j[l]
-    plt.scatter([col], [row], 100, 'red', 'x')
-    plt.text(col, row, "%.5g"%diagsum[l])
-plt.title("Optimal: %.5g"%cost)
-j = j[l]
-i = i[l]
-plt.axis('equal')
-plt.xlim([j-3, j+3])
-plt.ylim([i-3, i+3])
-plt.gca().invert_yaxis()
-plt.show()
-#plt.tight_layout()
-#plt.savefig("DiagSums_%i_%i.svg"%(M, N), bbox_inches='tight')
+def figure8_test():
+    # Setup point clouds
+    M = 800
+    t = 2*np.pi*np.linspace(0, 1, M)**2
+    X = np.zeros((M, 2))
+    X[:, 0] = np.cos(t)
+    X[:, 1] = np.sin(2*t)
+    N = 810
+    t = 2*np.pi*np.linspace(0, 1, N)
+    Y = np.zeros((N, 2))
+    Y[:, 0] = 1.1*np.cos(t)
+    Y[:, 1] = 1.1*np.sin(2*t)
+    X = X*1000
+    Y = Y*1000
 
-"""
-plt.subplot(131)
-plt.imshow(S)
-plt.colorbar()
-plt.subplot(132)
-plt.imshow(S2)
-plt.colorbar()
-plt.subplot(133)
-plt.imshow(S-S2)
-plt.colorbar()
-plt.show()
-"""
+    # Do ordinary DTW as a reference
+    res = DTW(X, Y)
+    path = res['path']
+    S2 = res['S']
+    cost = S2[-1, -1]
+    print("Cost ordinary: ", cost)
+    B = res['B']
+    D = res['D']
 
+    # Do parallel DTW
+    cost = DTWPar(X, Y)['cost']
+    print("Cost parallel: ", cost)
+    path2 = DTWPar_Backtrace(X, Y, cost)
+    
+    path2 = np.array(path2)
+    path = np.array(path)
 
-"""
-plt.figure(figsize=(10, 10))
-plt.subplot(221)
-plt.imshow(S)
-plt.colorbar()
-plt.subplot(222)
-plt.imshow(S2)
-plt.colorbar()
-plt.subplot(223)
-plt.imshow(S-S2)
-plt.colorbar()
-plt.subplot(224)
-diff = np.abs(S - S2)
-diff[diff > 0] = 1
-plt.imshow(diff)
-plt.colorbar()
-plt.show()
-"""
+    #print(np.allclose(path, path2))
+    print("Cost path ordinary: ", np.sum(D[path[:, 0], path[:, 1]]))
+    print("Cost path parallel: ", np.sum(D[path2[:, 0], path2[:, 1]]))
 
-"""
-plt.figure(figsize=(10, 10))
-plt.scatter(X[:, 0], X[:, 1], c='C0')
-plt.plot(X[:, 0], X[:, 1], c='C0')
-plt.scatter(Y[:, 0], Y[:, 1], c='C1')
-plt.plot(Y[:, 0], Y[:, 1], c='C1')
-for p in path:
-    [i, j] = p
-    plt.plot([X[i, 0], Y[j, 0]], [X[i, 1], Y[j, 1]], 'k')
-plt.show()
-"""
+    plt.scatter(path[:, 0], path[:, 1])
+    plt.scatter(path2[:, 0], path2[:, 1], 100, marker='x')
+    plt.show()
+
+figure8_test()
