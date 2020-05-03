@@ -11,34 +11,26 @@ def getCSM(X, Y):
     return D
 
 def DTW(X, Y):
-    D = getCSM(X, Y)
-    M = D.shape[0]
-    N = D.shape[1]
-    S = np.zeros((M, N))
-    B = np.zeros((M, N), dtype=int) # For backtracing
-    step = [[-1, -1], [-1, 0], [0, -1]] # For backtracing
-    S[:, 0] = np.cumsum(D[:, 0])
-    S[0, :] = np.cumsum(D[0, :])
-    B[:, 0] = 1
-    B[0, :] = 2
-    for i in range(1, M):
-        for j in range(1, N):
-            xs = [S[i-1, j-1], S[i-1, j], S[i, j-1]]
-            idx = np.argmin(xs)
-            S[i, j] = xs[idx] + D[i, j]
-            B[i, j] = idx
-    #plt.imshow(B)
-    #plt.show()
-    path = [[M-1, N-1]]
+    """
+    Compute dynamic time warping between two time-ordered
+    point clouds in Euclidean space
+    """
+    import dynseqalign
+    M = X.shape[0]
+    N = Y.shape[0]
+    cost, P = dynseqalign.DTW(X, Y)
+    P = np.asarray(P)
     i = M-1
     j = N-1
+    path = [[i, j]]
+    step = [[0, -1], [-1, 0], [-1, -1]] # LEFT, UP, DIAG
     while not(path[-1][0] == 0 and path[-1][1] == 0):
-        s = step[B[i, j]]
+        s = step[P[i, j]]
         i += s[0]
         j += s[1]
         path.append([i, j])
     path.reverse()
-    return {'D':D, 'S':S, 'B':B, 'path':path}
+    return {'cost':cost, 'path':path, 'P':P}
 
 def get_diag_indices(M, N, k):
     """
@@ -101,13 +93,13 @@ def DTWPar(X, Y, k_save = -1, k_stop = -1, debugging=False):
     M = X.shape[0]
     N = Y.shape[0]
     # Initialize first two diagonals and helper variables
-    d0 = np.array([np.sqrt(np.sum((X[0, :] - Y[0, :])**2))])
-    d1 = np.array([np.sqrt(np.sum((X[1, :] - Y[0, :])**2)), np.sqrt(np.sum((X[0, :] - Y[1, :])**2))]) + d0[0]
+    d0 = np.array([np.sqrt(np.sum((X[0, :] - Y[0, :])**2))], dtype=np.float32)
+    d1 = np.array([np.sqrt(np.sum((X[1, :] - Y[0, :])**2)), np.sqrt(np.sum((X[0, :] - Y[1, :])**2))], dtype=np.float32) + d0[0]
     
     # Store the result of each r2 in memory
     S = np.array([])
     if debugging:
-        S = np.zeros((M, N))
+        S = np.zeros((M, N), dtype=np.float32)
         S[0, 0] = d0[0]
         S[1, 0] = d1[0]
         S[0, 1] = d1[1]
@@ -117,11 +109,11 @@ def DTWPar(X, Y, k_save = -1, k_stop = -1, debugging=False):
     for k in range(2, M+N-1):
         i, j = get_diag_indices(M, N, k)
         dim = i.size
-        d2 = np.inf*np.ones(dim)
+        d2 = np.inf*np.ones(dim, dtype=np.float32)
         
-        left_cost = np.inf*np.ones(dim)
-        up_cost = np.inf*np.ones(dim)
-        diag_cost = np.inf*np.ones(dim)
+        left_cost = np.inf*np.ones(dim, dtype=np.float32)
+        up_cost = np.inf*np.ones(dim, dtype=np.float32)
+        diag_cost = np.inf*np.ones(dim, dtype=np.float32)
         
         # Pull out appropriate distances
         ds = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
@@ -245,7 +237,7 @@ def figure8_test():
     X = np.zeros((M, 2))
     X[:, 0] = np.cos(t)
     X[:, 1] = np.sin(2*t)
-    N = 1201
+    N = 1199
     t = 2*np.pi*np.linspace(0, 1, N)
     Y = np.zeros((N, 2))
     Y[:, 0] = 1.1*np.cos(t)
@@ -254,13 +246,16 @@ def figure8_test():
     Y = Y*1000
 
     # Do ordinary DTW as a reference
+    X = np.array(X, dtype=np.float32)
+    Y = np.array(Y, dtype=np.float32)
+    D = getCSM(X, Y)
+
     res = DTW(X, Y)
     path = res['path']
-    S2 = res['S']
-    cost = S2[-1, -1]
+    cost = res['cost']
+    plt.imshow(res['P'])
+    plt.show()
     print("Cost ordinary: ", cost)
-    B = res['B']
-    D = res['D']
 
     # Do parallel DTW
     cost = DTWPar(X, Y)['cost']

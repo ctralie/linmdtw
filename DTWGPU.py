@@ -60,7 +60,7 @@ def testTiming():
     from DTW import DTW, getCSM
     initParallelAlgorithms()
 
-    M = 800
+    M = 2000
     t = 2*np.pi*np.linspace(0, 1, M)**2
     X = np.zeros((M, 2))
     X[:, 0] = np.cos(t)
@@ -70,13 +70,21 @@ def testTiming():
     Y = np.zeros((N, 2))
     Y[:, 0] = 1.1*np.cos(t)
     Y[:, 1] = 1.1*np.sin(2*t)
-    D = np.array(getCSM(X, Y), dtype=np.float32)
-    #res1 = DTW(X, Y)
-    #cost1 = res1['S'][-1, -1]
-    #print("cost1 = ", cost1)
+    X = np.array(X, dtype=np.float32)
+    Y = np.array(Y, dtype=np.float32)
 
+    tic = time.time()
+    cost1 = DTW(X, Y)['cost']
+    time1 = time.time() - tic
+    #cost1 = res1['S'][-1, -1]
+    print("cost1 = ", cost1, ", time1 = ", time1)
+
+   
+    tic = time.time()
+    D = getCSM(X, Y)
     cost2 = doDTWGPU(D)
-    print("cost2 = ", cost2)
+    time2 = time.time() - tic
+    print("cost2 = ", cost2, ", time2 = ", time2)
 
 
 if __name__ == '__main__':
