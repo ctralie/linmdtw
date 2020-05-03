@@ -236,10 +236,8 @@ def DTWPar_Backtrace(X, Y, cost, min_dim = 5):
     path = path + right_path[1::]
 
     return path
+
     
-
-        
-
 def figure8_test():
     # Setup point clouds
     M = 800
@@ -280,4 +278,5 @@ def figure8_test():
     plt.scatter(path2[:, 0], path2[:, 1], 100, marker='x')
     plt.show()
 
-figure8_test()
+if __name__ == '__main__':
+    figure8_test()
