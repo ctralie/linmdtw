@@ -41,7 +41,10 @@ def doDTWGPU(CSM):
 
     diagLen = np.array(min(M, N), dtype = np.int32)
     diagLenPow2 = roundUpPow2(diagLen)
-    NThreads = min(diagLen, 512)
+    threadsPerBlock = min(diagLen, 512)
+    gridSize = int(np.ceil(diagLen/float(threadsPerBlock)))
+    print("gridSize = ", gridSize)
+    threadsPerBlock = np.array(threadsPerBlock, dtype=np.int32)
     res = gpuarray.to_gpu(np.array([0.0], dtype=np.float32))
     M = np.array(M, dtype=np.int32)
     N = np.array(N, dtype=np.int32)
@@ -49,7 +52,7 @@ def doDTWGPU(CSM):
 
     x = gpuarray.to_gpu(np.zeros(diagLen*3, dtype=np.float32))
 
-    DTW_(CSM, x, M, N, diagLen, diagLenPow2, res, block=(int(NThreads), 1, 1), grid=(1, 1))
+    DTW_(CSM, x, M, N, diagLen, threadsPerBlock, res, block=(int(threadsPerBlock), 1, 1), grid=(gridSize, 1))
     ret = res.get()[0]
     return ret
 
@@ -68,9 +71,9 @@ def testTiming():
     Y[:, 0] = 1.1*np.cos(t)
     Y[:, 1] = 1.1*np.sin(2*t)
     D = np.array(getCSM(X, Y), dtype=np.float32)
-    res1 = DTW(X, Y)
-    cost1 = res1['S'][-1, -1]
-    print("cost1 = ", cost1)
+    #res1 = DTW(X, Y)
+    #cost1 = res1['S'][-1, -1]
+    #print("cost1 = ", cost1)
 
     cost2 = doDTWGPU(D)
     print("cost2 = ", cost2)
