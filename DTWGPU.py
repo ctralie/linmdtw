@@ -33,9 +33,11 @@ def initParallelAlgorithms():
 def roundUpPow2(x):
     return np.array(int(2**np.ceil(np.log2(float(x)))), dtype=np.int32)
 
-def doDTWGPU(CSM, debug=False):
-    M = CSM.shape[0]
-    N = CSM.shape[1]
+def doDTWGPU(X, Y, debug=False):
+    assert(X.shape[1] == Y.shape[1])
+    dim = np.array(X.shape[1], dtype=np.int32)
+    M = X.shape[0]
+    N = Y.shape[0]
 
     diagLen = np.array(min(M, N), dtype = np.int32)
     diagLenPow2 = roundUpPow2(diagLen)
@@ -45,15 +47,16 @@ def doDTWGPU(CSM, debug=False):
     threadsPerBlock = np.array(threadsPerBlock, dtype=np.int32)
     M = np.array(M, dtype=np.int32)
     N = np.array(N, dtype=np.int32)
-    CSM = gpuarray.to_gpu(CSM)
+    X = gpuarray.to_gpu(np.array(X, dtype=np.float32))
+    Y = gpuarray.to_gpu(np.array(Y, dtype=np.float32))
 
     d0 = gpuarray.to_gpu(-1*np.ones(diagLen, dtype=np.float32))
     d1 = gpuarray.to_gpu(-1*np.ones(diagLen, dtype=np.float32))
     d2 = gpuarray.to_gpu(-1*np.ones(diagLen, dtype=np.float32))
     if debug:
-        U = gpuarray.to_gpu(np.zeros(CSM.shape, dtype=np.float32))
-        L = gpuarray.to_gpu(np.zeros(CSM.shape, dtype=np.float32))
-        UL = gpuarray.to_gpu(np.zeros(CSM.shape, dtype=np.float32))
+        U = gpuarray.to_gpu(np.zeros((M, N), dtype=np.float32))
+        L = gpuarray.to_gpu(np.zeros((M, N), dtype=np.float32))
+        UL = gpuarray.to_gpu(np.zeros((M, N), dtype=np.float32))
     else:
         U = gpuarray.to_gpu(np.zeros(1, dtype=np.float32))
         L = gpuarray.to_gpu(np.zeros(1, dtype=np.float32))
@@ -61,7 +64,7 @@ def doDTWGPU(CSM, debug=False):
 
     for i in range(M+N-1):
         i = np.array(i, dtype=np.int32)
-        DTW_Step_(CSM, d0, d1, d2, M, N, diagLen, i, np.array(int(debug), dtype=np.int32), U, L, UL, block=(int(threadsPerBlock), 1, 1), grid=(gridSize, 1))
+        DTW_Step_(X, Y, dim, d0, d1, d2, M, N, diagLen, i, np.array(int(debug), dtype=np.int32), U, L, UL, block=(int(threadsPerBlock), 1, 1), grid=(gridSize, 1))
         if i < M+N-2:
             # Rotate buffers
             temp = d0
@@ -92,9 +95,6 @@ def testTiming():
     X = np.array(X, dtype=np.float32)
     Y = np.array(Y, dtype=np.float32)
 
-    D = getCSM(X, Y)
-    D = np.array(D, dtype=np.float32)
-
     tic = time.time()
     res1 = DTW(X, Y, True)
     cost1 = res1['cost']
@@ -103,7 +103,7 @@ def testTiming():
     print("cost1 = ", cost1, ", time1 = ", time1)
     tic = time.time()
     
-    res2 = doDTWGPU(D, True)
+    res2 = doDTWGPU(X, Y, True)
     cost2 = res2['cost']
     time2 = time.time() - tic
     print("cost2 = ", cost2, ", time2 = ", time2)

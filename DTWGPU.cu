@@ -1,4 +1,4 @@
-__global__ void DTW_Step(float* CSM, float* d0, float* d1, float* d2, int M, int N, int diagLen, int i, int debug, float* U, float* L, float* UL) {
+__global__ void DTW_Step(float* X, float* Y, int dim, float* d0, float* d1, float* d2, int M, int N, int diagLen, int i, int debug, float* U, float* L, float* UL) {
     int upoff = 0;
 
     //Other local variables
@@ -29,7 +29,16 @@ __global__ void DTW_Step(float* CSM, float* d0, float* d1, float* d2, int M, int
         thisi = i1 - idx;
         thisj = j1 + idx;
         if (thisi >= i2 && thisj <= j2) {
-            val = CSM[thisi*N + thisj];
+            // Step 1: Compute the Euclidean distance between Xi and Yj
+            //val = CSM[thisi*N + thisj];
+            val = 0.0;
+            for (int k = 0; k < dim; k++) {
+                double diff = X[thisi*dim + k] - Y[thisj*dim + k];
+                val += diff*diff;
+            }
+            val = sqrt(val);
+
+            // Step 2: Figure out the optimal cost
             //Above
             if (idx + upoff + 1 < N + M - 1 && thisi > 0) {
                 lastscore = d1[idx + upoff + 1];
