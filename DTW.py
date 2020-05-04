@@ -2,14 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io as sio
 
-def getCSM(X, Y):
-    XSqr = np.sum(X**2, 1)
-    YSqr = np.sum(Y**2, 1)
-    D = XSqr[:, None] + YSqr[None, :] - 2*X.dot(Y.T)
-    D[D < 0] = 0
-    D = np.sqrt(D)
-    return D
-
 def DTW(X, Y, debug=False):
     """
     Compute dynamic time warping between two time-ordered
@@ -25,13 +17,26 @@ def DTW(X, Y, debug=False):
         Whether to keep track of debugging information
     """
     import dynseqalign
-    M = X.shape[0]
-    N = Y.shape[0]
-    res = dynseqalign.DTW(X, Y, int(debug))
-    cost = res['cost']
+    return dynseqalign.DTW(X, Y, int(debug))
+
+def DTW_Backtrace(X, Y, debug=False):
+    """
+    Compute dynamic time warping between two time-ordered
+    point clouds in Euclidean space, using cython on the 
+    backend
+    Parameters
+    ----------
+    X: ndarray(M, d)
+        A d-dimensional Euclidean point cloud with M points
+    Y: ndarray(N, d)
+        A d-dimensional Euclidean point cloud with N points
+    debug: boolean
+        Whether to keep track of debugging information
+    """
+    res = DTW(X, Y, debug)
     res['P'] = np.asarray(res['P'])
-    i = M-1
-    j = N-1
+    i = X.shape[0]-1
+    j = Y.shape[0]-1
     path = [[i, j]]
     step = [[0, -1], [-1, 0], [-1, -1]] # LEFT, UP, DIAG
     while not(path[-1][0] == 0 and path[-1][1] == 0):
@@ -42,33 +47,6 @@ def DTW(X, Y, debug=False):
     path.reverse()
     res['path'] = path
     return res
-
-def DTWPurePython(CSM):
-    """
-    Perform dynamic time warping on a cross-similarity matrix
-    """
-    M = CSM.shape[0]
-    N = CSM.shape[1]
-
-    S = np.zeros((M+1, N+1))
-    S[0, 0] = 0
-    S[1::, 0] = np.inf
-    S[0, 1::] = np.inf
-    U = np.zeros_like(CSM)
-    L = np.zeros_like(CSM)
-    UL = np.zeros_like(CSM)
-    for i in range(1, M+1):
-        for j in range(1, N+1):
-            d = CSM[i-1, j-1]
-            dul = S[i-1, j-1]
-            UL[i, j] = dul
-            dl = S[i, j-1]
-            L[i, j] = dl
-            du = S[i-1, j]
-            U[i, j] = du
-            arr = np.array([dul, dl, du])
-            S[i, j] = d + np.min(arr)
-    return {'S':S, 'U':U, 'L':L, 'UL':UL}
 
 def get_diag_indices(M, N, k):
     """
@@ -102,7 +80,7 @@ def get_diag_indices(M, N, k):
     return i, j
     
 
-def DTWPar(X, Y, k_save = -1, k_stop = -1, debugging=False):
+def DTWDiag(X, Y, k_save = -1, k_stop = -1, debug=False):
     """
     Parameters
     ----------
@@ -114,7 +92,7 @@ def DTWPar(X, Y, k_save = -1, k_stop = -1, debugging=False):
         Index of the diagonal d2 at which to save d0, d1, and d2
     k_stop: int
         Index of the diagonal d2 at which to stop computation
-    debugging: boolean
+    debug: boolean
         Whether to save the accumulated cost matrix
     
     Returns
@@ -136,7 +114,7 @@ def DTWPar(X, Y, k_save = -1, k_stop = -1, debugging=False):
     
     # Store the result of each r2 in memory
     S = np.array([])
-    if debugging:
+    if debug:
         S = np.zeros((M, N), dtype=np.float32)
         S[0, 0] = d0[0]
         S[1, 0] = d1[0]
@@ -177,7 +155,7 @@ def DTWPar(X, Y, k_save = -1, k_stop = -1, debugging=False):
         
         
         d2[0:dim] = np.minimum(np.minimum(left_cost, diag_cost), up_cost) + ds
-        if debugging:
+        if debug:
             S[i, j] = d2[0:dim]
         if k == k_save:
             res['d0'] = np.array(d0)
@@ -192,7 +170,7 @@ def DTWPar(X, Y, k_save = -1, k_stop = -1, debugging=False):
     res['S'] = S
     return res
 
-def DTWPar_Backtrace(X, Y, cost, min_dim = 5):
+def DTWDiag_Backtrace(X, Y, cost, min_dim = 5, DTWDiag_fn = DTWDiag):
     """
     Parameters
     ----------
@@ -206,6 +184,9 @@ def DTWPar_Backtrace(X, Y, cost, min_dim = 5):
         If one of the dimensions of the rectangular region
         to the left or to the right is less than this number,
         then switch to brute force
+    DTWDiag_fn: function handle
+        A function handle to the function used to compute diagonal-based
+        DTW, so that the GPU version can be easily swapped in
     """
     M = X.shape[0]
     N = Y.shape[0]
@@ -213,13 +194,13 @@ def DTWPar_Backtrace(X, Y, cost, min_dim = 5):
     
     # Do the forward computation
     k_save = int(np.ceil(K/2.0))
-    res1 = DTWPar(X, Y, k_save=k_save, k_stop=k_save)
+    res1 = DTWDiag_fn(X, Y, k_save=k_save, k_stop=k_save)
 
     # Do the backward computation
     k_save_rev = k_save
     if K%2 == 0:
         k_save_rev += 1
-    res2 = DTWPar(np.flipud(X), np.flipud(Y), k_save=k_save_rev, k_stop=k_save_rev)
+    res2 = DTWDiag_fn(np.flipud(X), np.flipud(Y), k_save=k_save_rev, k_stop=k_save_rev)
     res2['d0'], res2['d2'] = res2['d2'], res2['d0']
     for d in ['d0', 'd1', 'd2']:
         res2[d] = res2[d][::-1]
@@ -248,9 +229,9 @@ def DTWPar_Backtrace(X, Y, cost, min_dim = 5):
     YL = Y[0:L[1]+1, :]
     left_path = []
     if L[0] < min_dim or L[1] < min_dim:
-        left_path = DTW(XL, YL)['path']
+        left_path = DTW_Backtrace(XL, YL)['path']
     else:
-        left_path = DTWPar_Backtrace(XL, YL, center_costs[0][0], min_dim)
+        left_path = DTWDiag_Backtrace(XL, YL, center_costs[0][0], min_dim)
     path = left_path[0:-1] + center_path
     
     # Recursively compute right paths
@@ -259,57 +240,10 @@ def DTWPar_Backtrace(X, Y, cost, min_dim = 5):
     YR = Y[R[1]::, :]
     right_path = []
     if XR.shape[0] < min_dim or YR.shape[0] < min_dim:
-        right_path = DTW(XR, YR)['path']
+        right_path = DTW_Backtrace(XR, YR)['path']
     else:
-        right_path = DTWPar_Backtrace(XR, YR, center_costs[-1][1], min_dim)
+        right_path = DTWDiag_Backtrace(XR, YR, center_costs[-1][1], min_dim)
     right_path = [[i + R[0], j + R[1]] for [i, j] in right_path]
     path = path + right_path[1::]
 
     return path
-
-    
-def figure8_test():
-    # Setup point clouds
-    M = 800
-    t = 2*np.pi*np.linspace(0, 1, M)**2
-    X = np.zeros((M, 2))
-    X[:, 0] = np.cos(t)
-    X[:, 1] = np.sin(2*t)
-    N = 1199
-    t = 2*np.pi*np.linspace(0, 1, N)
-    Y = np.zeros((N, 2))
-    Y[:, 0] = 1.1*np.cos(t)
-    Y[:, 1] = 1.1*np.sin(2*t)
-    X = X*1000
-    Y = Y*1000
-
-    # Do ordinary DTW as a reference
-    X = np.array(X, dtype=np.float32)
-    Y = np.array(Y, dtype=np.float32)
-    D = getCSM(X, Y)
-
-    res = DTW(X, Y)
-    path = res['path']
-    cost = res['cost']
-    plt.imshow(res['P'])
-    plt.show()
-    print("Cost ordinary: ", cost)
-
-    # Do parallel DTW
-    cost = DTWPar(X, Y)['cost']
-    print("Cost parallel: ", cost)
-    path2 = DTWPar_Backtrace(X, Y, cost)
-    
-    path2 = np.array(path2)
-    path = np.array(path)
-
-    print(np.allclose(path, path2))
-    print("Cost path ordinary: ", np.sum(D[path[:, 0], path[:, 1]]))
-    print("Cost path parallel: ", np.sum(D[path2[:, 0], path2[:, 1]]))
-
-    plt.scatter(path[:, 0], path[:, 1])
-    plt.scatter(path2[:, 0], path2[:, 1], 100, marker='x')
-    plt.show()
-
-if __name__ == '__main__':
-    figure8_test()
