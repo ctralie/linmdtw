@@ -15,7 +15,7 @@ import sys
 
 from pycuda.compiler import SourceModule
 
-DTW_ = None
+DTW_Step_ = None
 
 def getResourceString(filename):
     #If calling from within this directory
@@ -27,15 +27,13 @@ def getResourceString(filename):
 def initParallelAlgorithms():
     s = getResourceString("DTWGPU.cu")
     mod = SourceModule(s)
-    global DTW_
-    DTW_ = mod.get_function("DTW")
+    global DTW_Step_
+    DTW_Step_ = mod.get_function("DTW_Step")
 
 def roundUpPow2(x):
     return np.array(int(2**np.ceil(np.log2(float(x)))), dtype=np.int32)
 
-def doDTWGPU(CSM):
-    #Minimum dimension of array can be at max size 1024
-    #for this scheme to fit in memory
+def doDTWGPU(CSM, debug=False):
     M = CSM.shape[0]
     N = CSM.shape[1]
 
@@ -45,27 +43,48 @@ def doDTWGPU(CSM):
     gridSize = int(np.ceil(diagLen/float(threadsPerBlock)))
     print("gridSize = ", gridSize)
     threadsPerBlock = np.array(threadsPerBlock, dtype=np.int32)
-    res = gpuarray.to_gpu(np.array([0.0], dtype=np.float32))
     M = np.array(M, dtype=np.int32)
     N = np.array(N, dtype=np.int32)
     CSM = gpuarray.to_gpu(CSM)
 
-    x = gpuarray.to_gpu(np.zeros(diagLen*3, dtype=np.float32))
+    d0 = gpuarray.to_gpu(-1*np.ones(diagLen, dtype=np.float32))
+    d1 = gpuarray.to_gpu(-1*np.ones(diagLen, dtype=np.float32))
+    d2 = gpuarray.to_gpu(-1*np.ones(diagLen, dtype=np.float32))
+    if debug:
+        U = gpuarray.to_gpu(np.zeros(CSM.shape, dtype=np.float32))
+        L = gpuarray.to_gpu(np.zeros(CSM.shape, dtype=np.float32))
+        UL = gpuarray.to_gpu(np.zeros(CSM.shape, dtype=np.float32))
+    else:
+        U = gpuarray.to_gpu(np.zeros(1, dtype=np.float32))
+        L = gpuarray.to_gpu(np.zeros(1, dtype=np.float32))
+        UL = gpuarray.to_gpu(np.zeros(1, dtype=np.float32))
 
-    DTW_(CSM, x, M, N, diagLen, threadsPerBlock, res, block=(int(threadsPerBlock), 1, 1), grid=(gridSize, 1))
-    ret = res.get()[0]
+    for i in range(M+N-1):
+        i = np.array(i, dtype=np.int32)
+        DTW_Step_(CSM, d0, d1, d2, M, N, diagLen, i, np.array(int(debug), dtype=np.int32), U, L, UL, block=(int(threadsPerBlock), 1, 1), grid=(gridSize, 1))
+        if i < M+N-2:
+            # Rotate buffers
+            temp = d0
+            d0 = d1
+            d1 = d2
+            d2 = temp
+    ret = {'cost':d2.get()[0]}
+    if debug:
+        ret['U'] = U.get()
+        ret['L'] = L.get()
+        ret['UL'] = UL.get()
     return ret
 
 def testTiming():
-    from DTW import DTW, getCSM
+    from DTW import DTW, getCSM, DTWPurePython
     initParallelAlgorithms()
 
-    M = 2000
+    M = 4000
     t = 2*np.pi*np.linspace(0, 1, M)**2
     X = np.zeros((M, 2))
     X[:, 0] = np.cos(t)
     X[:, 1] = np.sin(2*t)
-    N = 1201
+    N = 4000
     t = 2*np.pi*np.linspace(0, 1, N)
     Y = np.zeros((N, 2))
     Y[:, 0] = 1.1*np.cos(t)
@@ -73,18 +92,32 @@ def testTiming():
     X = np.array(X, dtype=np.float32)
     Y = np.array(Y, dtype=np.float32)
 
-    tic = time.time()
-    cost1 = DTW(X, Y)['cost']
-    time1 = time.time() - tic
-    #cost1 = res1['S'][-1, -1]
-    print("cost1 = ", cost1, ", time1 = ", time1)
-
-   
-    tic = time.time()
     D = getCSM(X, Y)
-    cost2 = doDTWGPU(D)
+    D = np.array(D, dtype=np.float32)
+
+    tic = time.time()
+    res1 = DTW(X, Y, True)
+    cost1 = res1['cost']
+
+    time1 = time.time() - tic
+    print("cost1 = ", cost1, ", time1 = ", time1)
+    tic = time.time()
+    
+    res2 = doDTWGPU(D, True)
+    cost2 = res2['cost']
     time2 = time.time() - tic
     print("cost2 = ", cost2, ", time2 = ", time2)
+
+    for i, key in enumerate(['U', 'UL', 'L']):
+        plt.subplot(2, 3, i+1)
+        plt.imshow(res1[key])
+        plt.colorbar()
+        plt.title("%s CPU"%key)
+        plt.subplot(2, 3, i+4)
+        plt.imshow(res2[key])
+        plt.title("%s GPU"%key)
+        plt.colorbar()
+    plt.show()
 
 
 if __name__ == '__main__':

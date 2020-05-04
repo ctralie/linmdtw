@@ -10,27 +10,65 @@ def getCSM(X, Y):
     D = np.sqrt(D)
     return D
 
-def DTW(X, Y):
+def DTW(X, Y, debug=False):
     """
     Compute dynamic time warping between two time-ordered
-    point clouds in Euclidean space
+    point clouds in Euclidean space, using cython on the 
+    backend
+    Parameters
+    ----------
+    X: ndarray(M, d)
+        A d-dimensional Euclidean point cloud with M points
+    Y: ndarray(N, d)
+        A d-dimensional Euclidean point cloud with N points
+    debug: boolean
+        Whether to keep track of debugging information
     """
     import dynseqalign
     M = X.shape[0]
     N = Y.shape[0]
-    cost, P = dynseqalign.DTW(X, Y)
-    P = np.asarray(P)
+    res = dynseqalign.DTW(X, Y, int(debug))
+    cost = res['cost']
+    res['P'] = np.asarray(res['P'])
     i = M-1
     j = N-1
     path = [[i, j]]
     step = [[0, -1], [-1, 0], [-1, -1]] # LEFT, UP, DIAG
     while not(path[-1][0] == 0 and path[-1][1] == 0):
-        s = step[P[i, j]]
+        s = step[res['P'][i, j]]
         i += s[0]
         j += s[1]
         path.append([i, j])
     path.reverse()
-    return {'cost':cost, 'path':path, 'P':P}
+    res['path'] = path
+    return res
+
+def DTWPurePython(CSM):
+    """
+    Perform dynamic time warping on a cross-similarity matrix
+    """
+    M = CSM.shape[0]
+    N = CSM.shape[1]
+
+    S = np.zeros((M+1, N+1))
+    S[0, 0] = 0
+    S[1::, 0] = np.inf
+    S[0, 1::] = np.inf
+    U = np.zeros_like(CSM)
+    L = np.zeros_like(CSM)
+    UL = np.zeros_like(CSM)
+    for i in range(1, M+1):
+        for j in range(1, N+1):
+            d = CSM[i-1, j-1]
+            dul = S[i-1, j-1]
+            UL[i, j] = dul
+            dl = S[i, j-1]
+            L[i, j] = dl
+            du = S[i-1, j]
+            U[i, j] = du
+            arr = np.array([dul, dl, du])
+            S[i, j] = d + np.min(arr)
+    return {'S':S, 'U':U, 'L':L, 'UL':UL}
 
 def get_diag_indices(M, N, k):
     """

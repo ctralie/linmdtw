@@ -1,93 +1,77 @@
-__global__ void DTW(float* CSM, float* x, int M, int N, int diagLen, int threadsPerBlock, float* res) {
-    //Have circularly rotating system of 3 buffers
-    //extern __shared__ float x[]; //Circular buffer
-    int off = 0;
+__global__ void DTW_Step(float* CSM, float* d0, float* d1, float* d2, int M, int N, int diagLen, int i, int debug, float* U, float* L, float* UL) {
     int upoff = 0;
 
     //Other local variables
-    int i;
     int i1, i2, j1, j2;
     int thisi, thisj;
-    int idx = threadIdx.x + blockIdx.x*threadsPerBlock;
-    float val, score;
-
-    //Initialize all buffer elements to -1
-    for (off = 0; off < 3; off++) {
-        if (idx < diagLen) {
-            x[idx + off*diagLen] = -1;
-        }
-        __syncthreads();
-    }
-    off = 0;
+    int idx = threadIdx.x + blockIdx.x*blockDim.x;
+    float val, score, lastscore;
 
     //Process each diagonal
-    for (i = 0; i < N + M - 1; i++) {
-        if (idx < diagLen) {
-            //Figure out the bounds of this diagonal
-            i1 = i;
-            j1 = 0;
-            upoff = -1;
-            if (i1 >= M) {
-                i1 = M-1;
-                j1 = i - (M-1);
-                upoff = 0;
+    score = -1;
+    if (idx < diagLen) {
+        //Figure out the bounds of this diagonal
+        i1 = i;
+        j1 = 0;
+        upoff = -1;
+        if (i1 >= M) {
+            i1 = M-1;
+            j1 = i - (M-1);
+            upoff = 0;
+        }
+        j2 = i;
+        i2 = 0;
+        if (j2 >= N) {
+            j2 = N-1;
+            i2 = i - (N-1);
+        }
+        //Update each batch
+        thisi = i1 - idx;
+        thisj = j1 + idx;
+        if (thisi >= i2 && thisj <= j2) {
+            val = CSM[thisi*N + thisj];
+            //Above
+            if (idx + upoff + 1 < N + M - 1 && thisi > 0) {
+                lastscore = d1[idx + upoff + 1];
+                if (lastscore > -1) {
+                    score = val + lastscore;
+                }
+                if (debug == 1) {
+                    U[thisi*N + thisj] = lastscore;
+                }
             }
-            j2 = i;
-            i2 = 0;
-            if (j2 >= N) {
-                j2 = N-1;
-                i2 = i - (N-1);
-            }
-            //Update each batch
-            thisi = i1 - idx;
-            thisj = j1 + idx;
-            if (thisi < i2 || thisj > j2) {
-                x[off*diagLen + idx] = -1;
-            }
-            else {
-                x[off*diagLen + idx] = -1;
-
-                val = CSM[thisi*N + thisj];
-                score = -1;
-                //Above
-                if (idx + upoff + 1 < N + M - 1 && thisi > 0) {
-                    if (x[((off+1)%3)*diagLen + idx + upoff + 1] > -1) {
-                        score = val + x[((off+1)%3)*diagLen + idx + upoff + 1];
+            if (idx + upoff >= 0 && thisj > 0) {
+                //Left
+                lastscore = d1[idx + upoff];
+                if (lastscore > -1) {
+                    if (score == -1 || lastscore + val < score) {
+                        score = lastscore + val;
                     }
                 }
-                if (idx + upoff >= 0 && thisj > 0) {
-                    //Left
-                    if (x[((off+1)%3)*diagLen + idx + upoff] > -1) {
-                        if (score == -1 || x[((off+1)%3)*diagLen + idx + upoff] + val < score) {
-                            score = x[((off+1)%3)*diagLen + idx + upoff] + val;
-                        }
+                if (debug == 1) {
+                    L[thisi*N + thisj] = lastscore;
+                }
+            }
+            if (i1 == M-1 && j1 > 1) {
+                upoff = 1;
+            }
+            if (idx + upoff >= 0 && thisi > 0) {
+                //Diagonal
+                lastscore = d0[idx + upoff];
+                if (lastscore > -1) {
+                    if (score == -1 || lastscore + val < score) {
+                        score = lastscore + val;
                     }
                 }
-                if (i1 == M-1 && j1 > 1) {
-                    upoff = 1;
-                }
-                
-                if (idx + upoff >= 0 && thisi > 0) {
-                    //Diagonal
-                    if (x[((off+2)%3)*diagLen + idx + upoff] > -1) {
-                        if (score == -1 || x[((off+2)%3)*diagLen + idx + upoff] + val < score) {
-                            score = x[((off+2)%3)*diagLen + idx + upoff] + val;
-                        }
-                    }
-                }
-                
-                if (score == -1) {
-                    score = val;
-                }
-                x[off*diagLen + idx] = score;
-                if (i == N + M - 2) {
-                    res[0] = score;
+                if (debug == 1) {
+                    UL[thisi*N + thisj] = lastscore;
                 }
             }
             
-            off = (off + 2) % 3; //Cycle buffers
+            if (score == -1) {
+                score = val;
+            }
         }
-
-        __syncthreads();
     }
+    d2[idx] = score;
 }
