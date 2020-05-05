@@ -170,7 +170,7 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, debug=False):
     res['S'] = S
     return res
 
-def DTWDiag_Backtrace(X, Y, cost, min_dim = 5, DTWDiag_fn = DTWDiag):
+def DTWDiag_Backtrace(X, Y, cost, min_dim = 50, DTWDiag_fn = DTWDiag):
     """
     Parameters
     ----------
@@ -213,7 +213,10 @@ def DTWDiag_Backtrace(X, Y, cost, min_dim = 5, DTWDiag_fn = DTWDiag):
         k = k_save - 2 + ki
         i, j = get_diag_indices(M, N, k)
         ds = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
-        diagsum = res1[d]+res2[d]-ds
+        # TODO: Come up with a more elegant way to deal with
+        # the fact that the GPU diagonal function sometimes
+        # returns diagonals with extra elements on the end
+        diagsum = res1[d][0:ds.size]+res2[d][0:ds.size]-ds
         l = np.argmin(diagsum)
         if np.allclose(diagsum[l], cost):
             diagsums.append(diagsum[l])
