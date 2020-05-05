@@ -26,9 +26,9 @@ def initParallelAlgorithms():
     s = getResourceString("DTWGPU.cu")
     mod = SourceModule(s)
     global DTW_Step_
-    DTW_Step_ = mod.get_function("DTW_Step")
+    DTW_Step_ = mod.get_function("DTW_Diag_Step")
 
-def DTWPar_GPU(X, Y, k_save = -1, k_stop = -1, debug=False):
+def DTWDiag_GPU(X, Y, k_save = -1, k_stop = -1, debug=False):
     """
     Compute dynamic time warping between two time-ordered
     point clouds in Euclidean space, using CUDA on the back end

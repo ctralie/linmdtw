@@ -1,4 +1,4 @@
-__global__ void DTW_Step(float* X, float* Y, int dim, float* d0, float* d1, float* d2, int M, int N, int diagLen, int i, int debug, float* U, float* L, float* UL) {
+__global__ void DTW_Diag_Step(float* X, float* Y, int dim, float* d0, float* d1, float* d2, int M, int N, int diagLen, int i, int debug, float* U, float* L, float* UL) {
     int upoff = 0;
 
     //Other local variables
@@ -81,6 +81,6 @@ __global__ void DTW_Step(float* X, float* Y, int dim, float* d0, float* d1, floa
                 score = val;
             }
         }
+        d2[idx] = score;
     }
-    d2[idx] = score;
 }

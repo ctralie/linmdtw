@@ -231,7 +231,7 @@ def DTWDiag_Backtrace(X, Y, cost, min_dim = 5, DTWDiag_fn = DTWDiag):
     if L[0] < min_dim or L[1] < min_dim:
         left_path = DTW_Backtrace(XL, YL)['path']
     else:
-        left_path = DTWDiag_Backtrace(XL, YL, center_costs[0][0], min_dim)
+        left_path = DTWDiag_Backtrace(XL, YL, center_costs[0][0], min_dim, DTWDiag_fn)
     path = left_path[0:-1] + center_path
     
     # Recursively compute right paths
@@ -242,7 +242,7 @@ def DTWDiag_Backtrace(X, Y, cost, min_dim = 5, DTWDiag_fn = DTWDiag):
     if XR.shape[0] < min_dim or YR.shape[0] < min_dim:
         right_path = DTW_Backtrace(XR, YR)['path']
     else:
-        right_path = DTWDiag_Backtrace(XR, YR, center_costs[-1][1], min_dim)
+        right_path = DTWDiag_Backtrace(XR, YR, center_costs[-1][1], min_dim, DTWDiag_fn)
     right_path = [[i + R[0], j + R[1]] for [i, j] in right_path]
     path = path + right_path[1::]
 
