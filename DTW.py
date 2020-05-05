@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io as sio
+from AlignmentTools import get_diag_indices
 
 def DTW(X, Y, debug=False):
     """
@@ -47,37 +48,6 @@ def DTW_Backtrace(X, Y, debug=False):
     path.reverse()
     res['path'] = path
     return res
-
-def get_diag_indices(M, N, k):
-    """
-    Compute the indices on a diagonal into indices on an accumulated
-    distance matrix
-    Parameters
-    ----------
-    M: int
-        Number of rows
-    N: int
-        Number of columns
-    k: int
-        Index of the diagonal
-    Returns
-    -------
-    i: ndarray(dim)
-        Row indices
-    j: ndarray(dim)
-        Column indices
-    """
-    starti = k
-    startj = 0
-    if k > M-1:
-        starti = M-1
-        startj = k - (M-1)
-    i = np.arange(starti, -1, -1)
-    j = startj + np.arange(i.size)
-    dim = np.sum(j < N) # Length of this diagonal
-    i = i[0:dim]
-    j = j[0:dim]
-    return i, j
     
 
 def DTWDiag(X, Y, k_save = -1, k_stop = -1, debug=False):
@@ -103,7 +73,9 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, debug=False):
         'U'/'L'/'UL': ndarray(M, N)
             The choice matrices (if debugging),
         'd0'/'d1'/'d2':ndarray(min(M, N))
-            The saved rows if a save index was chosen
+            The saved rows if a save index was chosen,
+        'csm0'/'csm1'/'csm2':ndarray(min(M, N))
+            The saved cross-similarity distances if a save index was chosen
     }
     """
     import dynseqalign
@@ -124,21 +96,32 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, debug=False):
     d0 = np.zeros(diagLen, dtype=np.float32)
     d1 = np.zeros_like(d0)
     d2 = np.zeros_like(d0)
+    # Distances between points along diagonals
+    csm0 = np.zeros_like(d0)
+    csm1 = np.zeros_like(d1)
+    csm2 = np.zeros_like(d2)
 
     # Loop through diagonals
     res = {}
     for k in range(M+N-1):
-        dynseqalign.DTW_Diag_Step(X, Y, d0, d1, d2, diagLen, k, int(debug), U, L, UL)
+        dynseqalign.DTW_Diag_Step(d0, d1, d2, csm0, csm1, M, N, diagLen, k, int(debug), U, L, UL)
+        i, j = get_diag_indices(M, N, k)
+        csm2 = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
         if k == k_save:
-            res['d0'] = np.array(d0)
-            res['d1'] = np.array(d1)
-            res['d2'] = np.array(d2)
+            res['d0'] = d0.copy()
+            res['csm0'] = csm0.copy()
+            res['d1'] = d1.copy()
+            res['csm1'] = csm1.copy()
+            res['d2'] = d2.copy()
+            res['csm2'] = csm2.copy()
         if k == k_stop:
             break
         # Shift diagonals
-        d0 = np.array(d1)
-        d1 = np.array(d2)
-    res['cost'] = d2[0]
+        d0 = d1.copy()
+        csm0 = csm1.copy()
+        d1 = d2.copy()
+        csm1 = csm2.copy()
+    res['cost'] = d2[0] + csm2[0]
     if debug:
         res['U'] = U
         res['L'] = L
@@ -183,7 +166,8 @@ def DTWDiag_Backtrace(X, Y, cost, min_dim = 50, max_dim = 500, DTWDiag_fn = DTWD
     Y2[:, :] = np.flipud(Y)
     res2 = DTWDiag_fn(X2, Y2, k_save=k_save_rev, k_stop=k_save_rev)
     res2['d0'], res2['d2'] = res2['d2'], res2['d0']
-    for d in ['d0', 'd1', 'd2']:
+    res2['csm0'], res2['csm2'] = res2['csm2'], res2['csm0']
+    for d in ['d0', 'd1', 'd2', 'csm0', 'csm1', 'csm2']:
         res2[d] = res2[d][::-1]
     
     # Look for optimal cost over all 3 diagonals
@@ -192,20 +176,23 @@ def DTWDiag_Backtrace(X, Y, cost, min_dim = 50, max_dim = 500, DTWDiag_fn = DTWD
         center_path = []
         center_costs = []
         diagsums = []
-        for ki, d in enumerate(['d0', 'd1', 'd2']):
+        for ki in range(3):
             k = k_save - 2 + ki
             i, j = get_diag_indices(M, N, k)
-            ds = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
             # TODO: Come up with a more elegant way to deal with
             # the fact that the GPU diagonal function sometimes
             # returns diagonals with extra elements on the end
-            diagsum = res1[d][0:ds.size]+res2[d][0:ds.size]-ds
+            csm = res1['csm%i'%ki]
+            d1i = res1['d%i'%ki]
+            d2i = res2['d%i'%ki]
+            diagsum = d1i[0:csm.size] + d2i[0:csm.size] + csm
             for l in np.argsort(diagsum)[0:10]:
                 if np.allclose(diagsum[l], cost, rtol=rtol, atol=atol):
                     diagsums.append(diagsum[l])
                     center_path.append([i[l], j[l]])
                     center_costs.append([res1[d][l], res2[d][l]])
         if len(diagsums) == 0:
+            # Fail gracefully
             print("Failed on %i x %i"%(M, N), "atol = ", atol, ", rtol = ", rtol)
             if M < max_dim and N < max_dim:
                 return DTW_Backtrace(X, Y)['path']

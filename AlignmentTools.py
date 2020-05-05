@@ -3,6 +3,38 @@ import scipy.interpolate as interp
 import matplotlib.pyplot as plt
 import scipy.sparse as sparse
 
+
+def get_diag_indices(M, N, k):
+    """
+    Compute the indices on a diagonal into indices on an accumulated
+    distance matrix
+    Parameters
+    ----------
+    M: int
+        Number of rows
+    N: int
+        Number of columns
+    k: int
+        Index of the diagonal
+    Returns
+    -------
+    i: ndarray(dim)
+        Row indices
+    j: ndarray(dim)
+        Column indices
+    """
+    starti = k
+    startj = 0
+    if k > M-1:
+        starti = M-1
+        startj = k - (M-1)
+    i = np.arange(starti, -1, -1)
+    j = startj + np.arange(i.size)
+    dim = np.sum(j < N) # Length of this diagonal
+    i = i[0:dim]
+    j = j[0:dim]
+    return i, j
+
 def getCSM(X, Y):
     """
     Return the Euclidean cross-similarity matrix between X and Y

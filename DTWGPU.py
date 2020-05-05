@@ -10,6 +10,7 @@ import time
 import scipy.io as sio
 import pkg_resources
 import sys
+from AlignmentTools import get_diag_indices
 
 from pycuda.compiler import SourceModule
 
@@ -54,14 +55,13 @@ def DTWDiag_GPU(X, Y, k_save = -1, k_stop = -1, debug=False):
     threadsPerBlock = min(diagLen, 512)
     gridSize = int(np.ceil(diagLen/float(threadsPerBlock)))
     threadsPerBlock = np.array(threadsPerBlock, dtype=np.int32)
-    M = np.array(M, dtype=np.int32)
-    N = np.array(N, dtype=np.int32)
-    X = gpuarray.to_gpu(np.array(X, dtype=np.float32))
-    Y = gpuarray.to_gpu(np.array(Y, dtype=np.float32))
 
     d0 = gpuarray.to_gpu(-1*np.ones(diagLen, dtype=np.float32))
     d1 = gpuarray.to_gpu(-1*np.ones(diagLen, dtype=np.float32))
     d2 = gpuarray.to_gpu(-1*np.ones(diagLen, dtype=np.float32))
+    csm0 = gpuarray.zeros_like(d0)
+    csm1 = gpuarray.zeros_like(d0)
+    csm2 = gpuarray.zeros_like(d0)
     if debug:
         U = gpuarray.to_gpu(np.zeros((M, N), dtype=np.float32))
         L = gpuarray.to_gpu(np.zeros((M, N), dtype=np.float32))
@@ -74,11 +74,16 @@ def DTWDiag_GPU(X, Y, k_save = -1, k_stop = -1, debug=False):
     res = {}
     for k in range(M+N-1):
         k = np.array(k, dtype=np.int32)
-        DTW_Step_(X, Y, dim, d0, d1, d2, M, N, diagLen, k, np.array(int(debug), dtype=np.int32), U, L, UL, block=(int(threadsPerBlock), 1, 1), grid=(gridSize, 1))
+        DTW_Step_(d0, d1, d2, csm0, csm1, np.array(M, dtype=np.int32), np.array(N, dtype=np.int32), diagLen, k, np.array(int(debug), dtype=np.int32), U, L, UL, block=(int(threadsPerBlock), 1, 1), grid=(gridSize, 1))
+        i, j = get_diag_indices(M, N, k)
+        csm2 = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
         if k == k_save:
             res['d0'] = d0.get()
+            res['csm0'] = csm0.get()
             res['d1'] = d1.get()
+            res['csm1'] = csm1.get()
             res['d2'] = d2.get()
+            res['csm2'] = csm2
         if k == k_stop:
             break
         if k < M+N-2:
@@ -87,7 +92,9 @@ def DTWDiag_GPU(X, Y, k_save = -1, k_stop = -1, debug=False):
             d0 = d1
             d1 = d2
             d2 = temp
-    res['cost'] = d2.get()[0]
+            csm0 = csm1
+            csm1 = gpuarray.to_gpu(csm2)
+    res['cost'] = d2.get()[0] + csm2[0]
     if debug:
         res['U'] = U.get()
         res['L'] = L.get()
