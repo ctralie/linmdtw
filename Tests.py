@@ -43,12 +43,12 @@ def test_alignment_accuracy():
 def test_ordinary_vs_diag_alignment():
     # Setup point clouds
     initParallelAlgorithms()
-    M = 1000
+    M = 4000
     t = 2*np.pi*np.linspace(0, 1, M)**2
     X = np.zeros((M, 2))
     X[:, 0] = np.cos(t)
     X[:, 1] = np.sin(9*t)
-    N = 500
+    N = 3000
     t = 2*np.pi*np.linspace(0, 1, N)
     Y = np.zeros((N, 2))
     Y[:, 0] = 1.1*np.cos(t)
@@ -70,7 +70,8 @@ def test_ordinary_vs_diag_alignment():
     res2 = DTWDiag(X, Y)
     cost = res2['cost']
     print("Cost diagonal: ", cost)
-    path2 = DTWDiag_Backtrace(X, Y, cost)#, DTWDiag_fn=DTWDiag_GPU)
+
+    path2 = DTWDiag_Backtrace(X, Y, cost, DTWDiag_fn=DTWDiag_GPU, pathGT=path)
     
     path2 = np.array(path2)
     path = np.array(path)
