@@ -100,63 +100,35 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, debug=False):
     {
         'cost': float
             The optimal cost of the alignment (if computation didn't stop prematurely),
-        'S': ndarray(M, N)
-            The accumulated cost matrix (if debugging),
-        'd0':ndarray(min(M, N)), 'd1':ndarray(min(M, N)), 'd2':ndarray(min(M, N))
+        'U'/'L'/'UL': ndarray(M, N)
+            The choice matrices (if debugging),
+        'd0'/'d1'/'d2':ndarray(min(M, N))
             The saved rows if a save index was chosen
     }
     """
+    import dynseqalign
     M = X.shape[0]
     N = Y.shape[0]
-    # Initialize first two diagonals and helper variables
-    d0 = np.array([np.sqrt(np.sum((X[0, :] - Y[0, :])**2))], dtype=np.float32)
-    d1 = np.array([np.sqrt(np.sum((X[1, :] - Y[0, :])**2)), np.sqrt(np.sum((X[0, :] - Y[1, :])**2))], dtype=np.float32) + d0[0]
-    
-    # Store the result of each r2 in memory
-    S = np.array([])
+
+    # Debugging info
+    U = np.zeros((1, 1), dtype=np.float32)
+    L = np.zeros_like(U)
+    UL = np.zeros_like(U)
     if debug:
-        S = np.zeros((M, N), dtype=np.float32)
-        S[0, 0] = d0[0]
-        S[1, 0] = d1[0]
-        S[0, 1] = d1[1]
+        U = np.zeros((M, N), dtype=np.float32)
+        L = np.zeros_like(U)
+        UL = np.zeros_like(U)
     
+    # Diagonals
+    diagLen = min(M, N)
+    d0 = np.zeros(diagLen, dtype=np.float32)
+    d1 = np.zeros_like(d0)
+    d2 = np.zeros_like(d0)
+
     # Loop through diagonals
     res = {}
-    for k in range(2, M+N-1):
-        i, j = get_diag_indices(M, N, k)
-        dim = i.size
-        d2 = np.inf*np.ones(dim, dtype=np.float32)
-        
-        left_cost = np.inf*np.ones(dim, dtype=np.float32)
-        up_cost = np.inf*np.ones(dim, dtype=np.float32)
-        diag_cost = np.inf*np.ones(dim, dtype=np.float32)
-        
-        # Pull out appropriate distances
-        ds = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
-        if j[0] == 0:
-            left_cost[1::] = d1[0:dim-1]
-            # l > 0, i > 0
-            idx = np.arange(dim)[(np.arange(dim) > 0)*(i > 0)] 
-            diag_cost[idx] = d0[idx-1]
-            # i > 0
-            idx = np.arange(dim)[i > 0]
-            up_cost[idx] = d1[idx]
-        elif i[0] == X.shape[0]-1 and j[0] == 1:
-            left_cost = d1[0:dim]
-            # i > 0
-            idx = np.arange(dim)[i > 0]
-            diag_cost[idx] = d0[idx]
-            up_cost[idx] = d1[idx+1]
-        elif i[0] == X.shape[0]-1 and j[0] > 1:
-            left_cost = d1[0:dim]
-            idx = np.arange(dim)[i > 0]
-            diag_cost[idx] = d0[idx+1]
-            up_cost[idx] = d1[idx+1]
-        
-        
-        d2[0:dim] = np.minimum(np.minimum(left_cost, diag_cost), up_cost) + ds
-        if debug:
-            S[i, j] = d2[0:dim]
+    for k in range(M+N-1):
+        dynseqalign.DTW_Diag_Step(X, Y, d0, d1, d2, diagLen, k, int(debug), U, L, UL)
         if k == k_save:
             res['d0'] = np.array(d0)
             res['d1'] = np.array(d1)
@@ -167,10 +139,13 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, debug=False):
         d0 = np.array(d1)
         d1 = np.array(d2)
     res['cost'] = d2[0]
-    res['S'] = S
+    if debug:
+        res['U'] = U
+        res['L'] = L
+        res['UL'] = UL
     return res
 
-def DTWDiag_Backtrace(X, Y, cost, min_dim = 50, DTWDiag_fn = DTWDiag):
+def DTWDiag_Backtrace(X, Y, cost, min_dim = 50, max_dim = 500, DTWDiag_fn = DTWDiag):
     """
     Parameters
     ----------
@@ -192,6 +167,8 @@ def DTWDiag_Backtrace(X, Y, cost, min_dim = 50, DTWDiag_fn = DTWDiag):
     N = Y.shape[0]
     K = M + N - 1
     
+    rtol = 1e-5
+    atol = 1e-8
     # Do the forward computation
     k_save = int(np.ceil(K/2.0))
     res1 = DTWDiag_fn(X, Y, k_save=k_save, k_stop=k_save)
@@ -200,32 +177,46 @@ def DTWDiag_Backtrace(X, Y, cost, min_dim = 50, DTWDiag_fn = DTWDiag):
     k_save_rev = k_save
     if K%2 == 0:
         k_save_rev += 1
-    res2 = DTWDiag_fn(np.flipud(X), np.flipud(Y), k_save=k_save_rev, k_stop=k_save_rev)
+    X2 = np.zeros_like(X)
+    X2[:, :] = np.flipud(X)
+    Y2 = np.zeros_like(Y)
+    Y2[:, :] = np.flipud(Y)
+    res2 = DTWDiag_fn(X2, Y2, k_save=k_save_rev, k_stop=k_save_rev)
     res2['d0'], res2['d2'] = res2['d2'], res2['d0']
     for d in ['d0', 'd1', 'd2']:
         res2[d] = res2[d][::-1]
     
     # Look for optimal cost over all 3 diagonals
-    center_path = []
-    center_costs = []
-    diagsums = []
-    for ki, d in enumerate(['d0', 'd1', 'd2']):
-        k = k_save - 2 + ki
-        i, j = get_diag_indices(M, N, k)
-        ds = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
-        # TODO: Come up with a more elegant way to deal with
-        # the fact that the GPU diagonal function sometimes
-        # returns diagonals with extra elements on the end
-        diagsum = res1[d][0:ds.size]+res2[d][0:ds.size]-ds
-        l = np.argmin(diagsum)
-        if np.allclose(diagsum[l], cost):
-            diagsums.append(diagsum[l])
-            center_path.append([i[l], j[l]])
-            center_costs.append([res1[d][l], res2[d][l]])
-    idx = np.argmin(np.array(diagsums))
-    center_costs = [center_costs[idx]]
-    center_path = [center_path[idx]]
-    
+    close_enough = False
+    while not close_enough:
+        center_path = []
+        center_costs = []
+        diagsums = []
+        for ki, d in enumerate(['d0', 'd1', 'd2']):
+            k = k_save - 2 + ki
+            i, j = get_diag_indices(M, N, k)
+            ds = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
+            # TODO: Come up with a more elegant way to deal with
+            # the fact that the GPU diagonal function sometimes
+            # returns diagonals with extra elements on the end
+            diagsum = res1[d][0:ds.size]+res2[d][0:ds.size]-ds
+            for l in np.argsort(diagsum)[0:10]:
+                if np.allclose(diagsum[l], cost, rtol=rtol, atol=atol):
+                    diagsums.append(diagsum[l])
+                    center_path.append([i[l], j[l]])
+                    center_costs.append([res1[d][l], res2[d][l]])
+        if len(diagsums) == 0:
+            print("Failed on %i x %i"%(M, N), "atol = ", atol, ", rtol = ", rtol)
+            if M < max_dim and N < max_dim:
+                return DTW_Backtrace(X, Y)['path']
+            atol *= 10
+            rtol *= 10
+        else:
+            close_enough = True
+            idx = np.argmin(np.array(diagsums))
+            center_costs = [center_costs[idx]]
+            center_path = [center_path[idx]]
+        
     # Recursively compute left paths
     L = center_path[0]
     XL = X[0:L[0]+1, :]
@@ -234,7 +225,7 @@ def DTWDiag_Backtrace(X, Y, cost, min_dim = 50, DTWDiag_fn = DTWDiag):
     if L[0] < min_dim or L[1] < min_dim:
         left_path = DTW_Backtrace(XL, YL)['path']
     else:
-        left_path = DTWDiag_Backtrace(XL, YL, center_costs[0][0], min_dim, DTWDiag_fn)
+        left_path = DTWDiag_Backtrace(XL, YL, center_costs[0][0], min_dim, max_dim, DTWDiag_fn)
     path = left_path[0:-1] + center_path
     
     # Recursively compute right paths
@@ -245,7 +236,7 @@ def DTWDiag_Backtrace(X, Y, cost, min_dim = 50, DTWDiag_fn = DTWDiag):
     if XR.shape[0] < min_dim or YR.shape[0] < min_dim:
         right_path = DTW_Backtrace(XR, YR)['path']
     else:
-        right_path = DTWDiag_Backtrace(XR, YR, center_costs[-1][1], min_dim, DTWDiag_fn)
+        right_path = DTWDiag_Backtrace(XR, YR, center_costs[-1][1], min_dim, max_dim, DTWDiag_fn)
     right_path = [[i + R[0], j + R[1]] for [i, j] in right_path]
     path = path + right_path[1::]
 

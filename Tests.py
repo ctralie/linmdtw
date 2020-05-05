@@ -43,18 +43,18 @@ def test_alignment_accuracy():
 def test_ordinary_vs_diag_alignment():
     # Setup point clouds
     initParallelAlgorithms()
-    M = 2000
+    M = 1000
     t = 2*np.pi*np.linspace(0, 1, M)**2
     X = np.zeros((M, 2))
     X[:, 0] = np.cos(t)
-    X[:, 1] = np.sin(2*t)
-    N = 5199
+    X[:, 1] = np.sin(9*t)
+    N = 500
     t = 2*np.pi*np.linspace(0, 1, N)
     Y = np.zeros((N, 2))
     Y[:, 0] = 1.1*np.cos(t)
     Y[:, 1] = 1.1*np.sin(2*t)
-    X = X*1000
-    Y = Y*1000
+    X = X
+    Y = Y
 
     # Do ordinary DTW as a reference
     X = np.array(X, dtype=np.float32)
@@ -66,12 +66,11 @@ def test_ordinary_vs_diag_alignment():
     print("Cost ordinary: ", cost)
 
     # Do parallel DTW
-    res2 = DTWDiag_GPU(X, Y)
-
+    #res2 = DTWDiag_GPU(X, Y)
+    res2 = DTWDiag(X, Y)
     cost = res2['cost']
     print("Cost diagonal: ", cost)
-
-    path2 = DTWDiag_Backtrace(X, Y, cost, DTWDiag_fn=DTWDiag_GPU)
+    path2 = DTWDiag_Backtrace(X, Y, cost)#, DTWDiag_fn=DTWDiag_GPU)
     
     path2 = np.array(path2)
     path = np.array(path)

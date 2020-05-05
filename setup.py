@@ -62,7 +62,7 @@ setup(
     author="Anonymous",
     author_email="anonymous@gmail.com",
     license='Apache2',
-    packages=['ripser'],
+    packages=['dynseqalign'],
     ext_modules=cythonize(ext_modules),
     install_requires=[
         'Cython',
