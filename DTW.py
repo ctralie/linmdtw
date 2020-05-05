@@ -36,6 +36,9 @@ def DTW_Backtrace(X, Y, debug=False):
     """
     res = DTW(X, Y, debug)
     res['P'] = np.asarray(res['P'])
+    if debug:
+        for key in ['U', 'L', 'UL', 'S']:
+            res[key] = np.asarray(res[key])
     i = X.shape[0]-1
     j = Y.shape[0]-1
     path = [[i, j]]
@@ -86,10 +89,12 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, debug=False):
     U = np.zeros((1, 1), dtype=np.float32)
     L = np.zeros_like(U)
     UL = np.zeros_like(U)
+    S = np.zeros_like(U)
     if debug:
         U = np.zeros((M, N), dtype=np.float32)
         L = np.zeros_like(U)
         UL = np.zeros_like(U)
+        S = np.zeros_like(U)
     
     # Diagonals
     diagLen = min(M, N)
@@ -104,7 +109,7 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, debug=False):
     # Loop through diagonals
     res = {}
     for k in range(M+N-1):
-        dynseqalign.DTW_Diag_Step(d0, d1, d2, csm0, csm1, M, N, diagLen, k, int(debug), U, L, UL)
+        dynseqalign.DTW_Diag_Step(d0, d1, d2, csm0, csm1, M, N, diagLen, k, int(debug), U, L, UL, S)
         i, j = get_diag_indices(M, N, k)
         csm2 = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
         if k == k_save:
@@ -126,6 +131,7 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, debug=False):
         res['U'] = U
         res['L'] = L
         res['UL'] = UL
+        res['S'] = S
     return res
 
 def DTWDiag_Backtrace(X, Y, cost, min_dim = 50, max_dim = 500, DTWDiag_fn = DTWDiag, pathGT = None):
@@ -241,8 +247,7 @@ def DTWDiag_Backtrace(X, Y, cost, min_dim = 50, max_dim = 500, DTWDiag_fn = DTWD
                         plt.scatter(l, val, 200)
                         legend.append("GT {}".format(val))
                 plt.legend(legend)
-                plt.title("Cost = {}".format(cost))
-                plt.show()
+                plt.title("Ground Truth Cost = {}\nPassed Cost = {}".format(DTW(X, Y)['cost'], cost))
 
         
     # Recursively compute left paths

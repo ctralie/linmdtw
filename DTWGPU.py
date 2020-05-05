@@ -63,18 +63,19 @@ def DTWDiag_GPU(X, Y, k_save = -1, k_stop = -1, debug=False):
     csm1 = gpuarray.zeros_like(d0)
     csm2 = gpuarray.zeros_like(d0)
     if debug:
-        U = gpuarray.to_gpu(np.zeros((M, N), dtype=np.float32))
-        L = gpuarray.to_gpu(np.zeros((M, N), dtype=np.float32))
-        UL = gpuarray.to_gpu(np.zeros((M, N), dtype=np.float32))
+        U = gpuarray.to_gpu(-1*np.ones((M, N), dtype=np.float32))
+        L = gpuarray.to_gpu(-1*np.ones((M, N), dtype=np.float32))
+        UL = gpuarray.to_gpu(-1*np.ones((M, N), dtype=np.float32))
+        S = gpuarray.to_gpu(-1*np.ones((M, N), dtype=np.float32))
     else:
         U = gpuarray.to_gpu(np.zeros(1, dtype=np.float32))
         L = gpuarray.to_gpu(np.zeros(1, dtype=np.float32))
         UL = gpuarray.to_gpu(np.zeros(1, dtype=np.float32))
+        S = gpuarray.to_gpu(np.zeros(1, dtype=np.float32))
 
     res = {}
     for k in range(M+N-1):
-        k = np.array(k, dtype=np.int32)
-        DTW_Step_(d0, d1, d2, csm0, csm1, np.array(M, dtype=np.int32), np.array(N, dtype=np.int32), diagLen, k, np.array(int(debug), dtype=np.int32), U, L, UL, block=(int(threadsPerBlock), 1, 1), grid=(gridSize, 1))
+        DTW_Step_(d0, d1, d2, csm0, csm1, np.array(M, dtype=np.int32), np.array(N, dtype=np.int32), diagLen, np.array(k, dtype=np.int32), np.array(int(debug), dtype=np.int32), U, L, UL, S, block=(int(threadsPerBlock), 1, 1), grid=(gridSize, 1))
         i, j = get_diag_indices(M, N, k)
         csm2 = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
         if k == k_save:
@@ -99,5 +100,5 @@ def DTWDiag_GPU(X, Y, k_save = -1, k_stop = -1, debug=False):
         res['U'] = U.get()
         res['L'] = L.get()
         res['UL'] = UL.get()
-        res['S'] = np.minimum(np.minimum(res['U'], res['L']), res['UL'])
+        res['S'] = S.get()
     return res

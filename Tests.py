@@ -137,7 +137,40 @@ def test_timing(dim = 20):
             allsizes.append(N)
             json.dump({"cytimes":cytimes, "cudatimes":cudatimes, "allsizes":allsizes}, open("timings.txt", "w"))
 
+def diag_cost_bug_test():
+    initParallelAlgorithms()
+    res = sio.loadmat("XY.mat")
+    X, Y = res['X'], res['Y']
+    X = np.ascontiguousarray(X)
+    Y = np.ascontiguousarray(Y)
+
+   
+    res1 = DTW_Backtrace(X, Y, debug=True)
+    print("CPU cost", res1['cost'])
+
+    
+    res2 = DTWDiag_GPU(X, Y, debug=True)
+    print("GPU cost", res2['cost'])
+
+    path = res1['path']
+    cost = res1['cost']
+    res2['S'] += getCSM(X, Y)
+    S = res1['S']
+
+    path2 = DTWDiag_Backtrace(X, Y, cost, DTWDiag_fn=DTWDiag_GPU, pathGT=path)
+
+    M = X.shape[0]
+    N = Y.shape[0]
+    K = M + N - 1
+    # Do the forward computation
+    k_save = int(np.ceil(K/2.0))
+    for k in [k_save-2, k_save-1, k_save]:
+        i, j = get_diag_indices(M, N, k)
+        plt.plot(S[i, j])
+    plt.show()
+
 if __name__ == '__main__':
-    test_ordinary_vs_diag_alignment()
+    diag_cost_bug_test()
+    #test_ordinary_vs_diag_alignment()
     #test_alignment_accuracy()
     #test_timing()
