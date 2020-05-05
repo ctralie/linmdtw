@@ -42,13 +42,13 @@ def test_alignment_accuracy():
 
 def test_ordinary_vs_diag_alignment():
     # Setup point clouds
-    from AlignmentTools import getCSM
-    M = 800
+    initParallelAlgorithms()
+    M = 2000
     t = 2*np.pi*np.linspace(0, 1, M)**2
     X = np.zeros((M, 2))
     X[:, 0] = np.cos(t)
     X[:, 1] = np.sin(2*t)
-    N = 1199
+    N = 5199
     t = 2*np.pi*np.linspace(0, 1, N)
     Y = np.zeros((N, 2))
     Y[:, 0] = 1.1*np.cos(t)
@@ -63,22 +63,30 @@ def test_ordinary_vs_diag_alignment():
     res = DTW_Backtrace(X, Y)
     path = res['path']
     cost = res['cost']
-    plt.imshow(res['P'])
-    plt.show()
     print("Cost ordinary: ", cost)
 
     # Do parallel DTW
-    cost = DTWDiag(X, Y)['cost']
+    res2 = DTWDiag_GPU(X, Y)
+
+    cost = res2['cost']
     print("Cost diagonal: ", cost)
-    path2 = DTWDiag_Backtrace(X, Y, cost)
+
+    path2 = DTWDiag_Backtrace(X, Y, cost, DTWDiag_fn=DTWDiag_GPU)
     
     path2 = np.array(path2)
     path = np.array(path)
 
-    print(np.allclose(path, path2))
+    if path.shape[0] == path2.shape[0]:
+        print("allclose: ", np.allclose(path, path2))
+    else:
+        print("path 1 has ", path.shape[0], " elements")
+        print("path 2 has ", path2.shape[0], " elements")
     D = getCSM(X, Y)
     print("Cost path ordinary: ", np.sum(D[path[:, 0], path[:, 1]]))
     print("Cost path diagonal: ", np.sum(D[path2[:, 0], path2[:, 1]]))
+
+    hist = getAlignmentCellDists(path, path2)['hist']
+    print(hist)
 
     plt.scatter(path[:, 0], path[:, 1])
     plt.scatter(path2[:, 0], path2[:, 1], 100, marker='x')
@@ -91,15 +99,16 @@ def test_timing(dim = 20):
     initParallelAlgorithms()
     np.random.seed(0)
 
-
     # Run cython code
     trials = 10
-    reps = 100
+    reps = 30
     MAX_SIZE = 20000
-    sizes = np.round(np.linspace(0, 1, 101)[1::]*MAX_SIZE)
+    sizes = np.linspace(0, 1, 101)[1::]**0.5
+    sizes = np.round(sizes*MAX_SIZE)
+    print(sizes)
     allsizes = []
     cytimes = []
-    nbtimes = []
+    cudatimes = []
     for N in sizes:
         N = int(N)
         WarpDict = getWarpDictionary(N)
@@ -109,6 +118,8 @@ def test_timing(dim = 20):
         for trial in range(trials):
             global X
             global Y
+            global path1
+            global path2
             t2 = getWarpingPath(WarpDict, 3, False)
             Y = np.zeros((N, dim))
             Y[:, 0:3] = getTorusKnot(5, 3, t2)
@@ -117,13 +128,16 @@ def test_timing(dim = 20):
             Y = np.array(Y.dot(R) + T[None, :], dtype=np.float32)
             print("Doing %i x %i trial %i"%(N, N, trial+1))
             cytime = timeit.timeit("DTW(X, Y)", number=reps, globals=globals())
-            nbtime = timeit.timeit("DTWPar_GPU(X, Y)", number=reps, globals=globals())
+            cudatime = timeit.timeit("DTWDiag_GPU(X, Y)", number=reps, globals=globals())
+            cytime = cytime / reps
+            cudatime = cudatime / reps
+            print("avg cytime = ", cytime, "avg cudatime = ", cudatime)
             cytimes.append(cytime)
-            nbtimes.append(nbtime)
+            cudatimes.append(cudatime)
             allsizes.append(N)
-            json.dump({"cytimes":cytimes, "nbtimes":nbtimes, "allsizes":allsizes}, open("timings.txt", "w"))
+            json.dump({"cytimes":cytimes, "cudatimes":cudatimes, "allsizes":allsizes}, open("timings.txt", "w"))
 
 if __name__ == '__main__':
-    #test_ordinary_vs_diag_alignment()
+    test_ordinary_vs_diag_alignment()
     #test_alignment_accuracy()
-    test_timing()
+    #test_timing()

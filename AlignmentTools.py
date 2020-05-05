@@ -339,6 +339,38 @@ def computeAlignmentError(pP1, pP2, etype = 2, doPlot = False):
             plt.title("Score = %g"%score)
     return score
 
+
+def getAlignmentCellDists(P1, P2):
+    """
+    Return the L1 distances between each point on the warping path
+    P2 to the closest point on the warping path P1
+    Parameters
+    ----------
+    P1: ndarray(M, 2)
+        Ground truth warping path
+    P2: ndarray(N, 2)
+        Test warping path
+    Returns
+    -------
+    dists: ndarray(N)
+        L1 distances of each point in the second warping path
+        to their closest points in p1,
+    hist: dictionary{dist: count}
+        A histogram of the counts
+    """
+    from sklearn.neighbors import KDTree
+    tree = KDTree(P1)
+    _, idx = tree.query(P2, k=1)
+    idx = idx.flatten()
+    P1Close = P1[idx, :]
+    dists = np.sum(np.abs(P2-P1Close), 1)
+    hist = {}
+    for dist in dists:
+        if not dist in hist:
+            hist[dist] = 0
+        hist[dist] += 1
+    return {'dists':dists, 'hist':hist}
+
 if __name__ == '__main__':
     #Test out alignment errors
     N = 100
