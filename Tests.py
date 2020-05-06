@@ -144,30 +144,42 @@ def diag_cost_bug_test():
     X = np.ascontiguousarray(X)
     Y = np.ascontiguousarray(Y)
 
-   
-    res1 = DTW_Backtrace(X, Y, debug=True)
+
+    k = 30   
+    #X = X[0:-k, :]
+    res1 = DTW_Backtrace(X[0:-k, :], Y, debug=True)
     print("CPU cost", res1['cost'])
 
-    
-    res2 = DTWDiag_GPU(X, Y, debug=True)
-    print("GPU cost", res2['cost'])
+    res2 = DTWDiag_GPU(X, Y, box=[0, X.shape[0]-k-1, 0, Y.shape[0]-1], debug=True)
+    #res2 = DTWDiag(X, Y, debug=True)
+    print("Diag cost", res2['cost'])
+    C = getCSM(X[0:-k, :], Y)
+    res2['S'] += C
+    print(np.cumsum(C[:, 0]))
+    print(res2['S'][:, 0])
 
-    path = res1['path']
-    cost = res1['cost']
-    res2['S'] += getCSM(X, Y)
-    S = res1['S']
-
-    path2 = DTWDiag_Backtrace(X, Y, cost, DTWDiag_fn=DTWDiag_GPU, pathGT=path)
-
-    M = X.shape[0]
-    N = Y.shape[0]
-    K = M + N - 1
-    # Do the forward computation
-    k_save = int(np.ceil(K/2.0))
-    for k in [k_save-2, k_save-1, k_save]:
-        i, j = get_diag_indices(M, N, k)
-        plt.plot(S[i, j])
+    #"""
+    plt.figure(figsize=(20, 15))
+    for i, key in enumerate(['U', 'L', 'UL', 'S']):
+        plt.subplot(3, 4, i+1)
+        plt.imshow(res1[key])
+        plt.title("res1 %s"%key)
+        plt.colorbar()
+        plt.subplot(3, 4, 5+i)
+        plt.imshow(res2[key])
+        plt.title("res2 %s"%key)
+        plt.colorbar()
+        plt.subplot(3, 4, 9+i)
+        plt.imshow(res1[key]-res2[key])
+        plt.colorbar()
     plt.show()
+    #"""
+
+    #plt.plot(np.cumsum(C[0, :]), res2['S'][0, :])
+    plt.plot(np.cumsum(C[:, 0]), res2['S'][:, 0])
+    plt.show()
+
+    
 
 if __name__ == '__main__':
     diag_cost_bug_test()
