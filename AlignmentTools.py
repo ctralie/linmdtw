@@ -409,6 +409,7 @@ def getAlignmentCellDists(P1, P2):
     dists = np.sum(np.abs(P2-P1Close), 1)
     hist = {}
     for dist in dists:
+        dist = int(dist)
         if not dist in hist:
             hist[dist] = 0
         hist[dist] += 1

@@ -61,7 +61,7 @@ float c_dtw(float* X, float* Y, int* P, int M, int N, int d, int debug, float* U
                     score = up;
                     P[i*N + j] = UP;
                 }
-                if (diag > -1 && (diag < score || score == -1)) {
+                if (diag > -1 && (diag <= score || score == -1)) {
                     score = diag;
                     P[i*N + j] = DIAG;
                 }

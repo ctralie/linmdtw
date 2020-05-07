@@ -141,7 +141,7 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fal
         res['S'] = S
     return res
 
-def DTWDiag_Backtrace(X, Y, box = None, min_dim = 20, DTWDiag_fn = DTWDiag):
+def DTWDiag_Backtrace(X, Y, box = None, min_dim = 50, DTWDiag_fn = DTWDiag):
     """
     Parameters
     ----------
