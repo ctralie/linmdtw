@@ -39,6 +39,9 @@ def get_diag_indices(MTotal, NTotal, k, box = None, reverse=False):
     dim = np.sum(j < N) # Length of this diagonal
     i = i[0:dim]
     j = j[0:dim]
+    if reverse:
+        i = M-1-i
+        j = N-1-j
     i += box[0]
     j += box[2]
     return i, j

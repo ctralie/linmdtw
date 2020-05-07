@@ -140,7 +140,7 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fal
         res['S'] = S
     return res
 
-def DTWDiag_Backtrace(X, Y, cost, min_dim = 50, max_dim = 500, DTWDiag_fn = DTWDiag, pathGT = None):
+def DTWDiag_Backtrace(X, Y, cost, box = None, min_dim = 50, DTWDiag_fn = DTWDiag, pathGT = None):
     """
     Parameters
     ----------
@@ -160,28 +160,43 @@ def DTWDiag_Backtrace(X, Y, cost, min_dim = 50, max_dim = 500, DTWDiag_fn = DTWD
     path_GT: ndarray(N, 2)
         A ground-truth warping path to check against if debugging
     """
-    M = X.shape[0]
-    N = Y.shape[0]
+    if not box:
+        box = [0, X.shape[0]-1, 0, Y.shape[0]-1]
+    M = box[1]-box[0]+1
+    N = box[3]-box[2]+1
     K = M + N - 1
     
     rtol = 1e-5
     atol = 1e-8
     # Do the forward computation
     k_save = int(np.ceil(K/2.0))
-    res1 = DTWDiag_fn(X, Y, k_save=k_save, k_stop=k_save)
+    res1 = DTWDiag_fn(X, Y, k_save=k_save, k_stop=k_save, box=box)
 
     # Do the backward computation
     k_save_rev = k_save
     if K%2 == 0:
         k_save_rev += 1
-    X2 = np.zeros_like(X)
-    X2[:, :] = np.flipud(X)
-    Y2 = np.zeros_like(Y)
-    Y2[:, :] = np.flipud(Y)
-    res2 = DTWDiag_fn(X2, Y2, k_save=k_save_rev, k_stop=k_save_rev)
+    res2 = DTWDiag_fn(X, Y, k_save=k_save_rev, k_stop=k_save_rev, box=box, reverse=True)
     res2['d0'], res2['d2'] = res2['d2'], res2['d0']
     res2['csm0'], res2['csm2'] = res2['csm2'], res2['csm0']
     for d in ['d0', 'd1', 'd2', 'csm0', 'csm1', 'csm2']:
         res2[d] = res2[d][::-1]
+    
+    plt.figure(figsize=(10, 5))
+    plt.subplot(121)
+    for i in range(3):
+        dleft = res1['d%i'%i]
+        csmleft = res1['csm%i'%i]
+        dright = res2['d%i'%i]
+        L = csmleft.size
+        diagsum = dleft[0:L] + dright[0:L] + csmleft
+        plt.plot(diagsum)
+        print(np.min(diagsum))
+    plt.subplot(122)
+    for i in range(3):
+        csmleft = res1['csm%i'%i]
+        csmright = res2['csm%i'%i]
+        plt.scatter(csmleft, csmright)
+    plt.show()
     
     

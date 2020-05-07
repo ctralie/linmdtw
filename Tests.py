@@ -144,40 +144,9 @@ def diag_cost_bug_test():
     X = np.ascontiguousarray(X)
     Y = np.ascontiguousarray(Y)
 
-
-    k = 30   
-    #X = X[0:-k, :]
-    res1 = DTW_Backtrace(X[0:-k, :], Y, debug=True)
-    print("CPU cost", res1['cost'])
-
-    res2 = DTWDiag_GPU(X, Y, box=[0, X.shape[0]-k-1, 0, Y.shape[0]-1], debug=True)
-    #res2 = DTWDiag(X, Y, debug=True)
-    print("Diag cost", res2['cost'])
-    C = getCSM(X[0:-k, :], Y)
-    res2['S'] += C
-    print(np.cumsum(C[:, 0]))
-    print(res2['S'][:, 0])
-
-    #"""
-    plt.figure(figsize=(20, 15))
-    for i, key in enumerate(['U', 'L', 'UL', 'S']):
-        plt.subplot(3, 4, i+1)
-        plt.imshow(res1[key])
-        plt.title("res1 %s"%key)
-        plt.colorbar()
-        plt.subplot(3, 4, 5+i)
-        plt.imshow(res2[key])
-        plt.title("res2 %s"%key)
-        plt.colorbar()
-        plt.subplot(3, 4, 9+i)
-        plt.imshow(res1[key]-res2[key])
-        plt.colorbar()
-    plt.show()
-    #"""
-
-    #plt.plot(np.cumsum(C[0, :]), res2['S'][0, :])
-    plt.plot(np.cumsum(C[:, 0]), res2['S'][:, 0])
-    plt.show()
+    cost = DTWDiag_GPU(X, Y)['cost']
+    print("cost = ", cost)
+    DTWDiag_Backtrace(X, Y, cost)
 
     
 
