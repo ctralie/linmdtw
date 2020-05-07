@@ -86,7 +86,7 @@ def DTWDiag_GPU(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug
             res['d1'] = d1.get()
             res['csm1'] = csm1.get()
             res['d2'] = d2.get()
-            res['csm2'] = csm2
+            res['csm2'] = csm2.copy()
         if k == k_stop:
             break
         if k < M+N-2:

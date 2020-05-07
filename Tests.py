@@ -71,8 +71,7 @@ def test_ordinary_vs_diag_alignment():
     cost = res2['cost']
     print("Cost diagonal: ", cost)
 
-    path2 = DTWDiag_Backtrace(X, Y, cost, DTWDiag_fn=DTWDiag_GPU, pathGT=path)
-    
+    path2 = DTWDiag_Backtrace(X, Y, DTWDiag_fn=DTWDiag_GPU)
     path2 = np.array(path2)
     path = np.array(path)
 
@@ -137,21 +136,9 @@ def test_timing(dim = 20):
             allsizes.append(N)
             json.dump({"cytimes":cytimes, "cudatimes":cudatimes, "allsizes":allsizes}, open("timings.txt", "w"))
 
-def diag_cost_bug_test():
-    initParallelAlgorithms()
-    res = sio.loadmat("XY.mat")
-    X, Y = res['X'], res['Y']
-    X = np.ascontiguousarray(X)
-    Y = np.ascontiguousarray(Y)
-
-    cost = DTWDiag_GPU(X, Y)['cost']
-    print("cost = ", cost)
-    DTWDiag_Backtrace(X, Y, cost)
-
     
 
 if __name__ == '__main__':
-    diag_cost_bug_test()
-    #test_ordinary_vs_diag_alignment()
+    test_ordinary_vs_diag_alignment()
     #test_alignment_accuracy()
     #test_timing()

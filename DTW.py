@@ -36,6 +36,7 @@ def DTW_Backtrace(X, Y, debug=False):
     """
     res = DTW(X, Y, debug)
     res['P'] = np.asarray(res['P'])
+
     if debug:
         for key in ['U', 'L', 'UL', 'S']:
             res[key] = np.asarray(res[key])
@@ -140,7 +141,7 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fal
         res['S'] = S
     return res
 
-def DTWDiag_Backtrace(X, Y, cost, box = None, min_dim = 50, DTWDiag_fn = DTWDiag, pathGT = None):
+def DTWDiag_Backtrace(X, Y, box = None, min_dim = 20, DTWDiag_fn = DTWDiag):
     """
     Parameters
     ----------
@@ -148,8 +149,6 @@ def DTWDiag_Backtrace(X, Y, cost, box = None, min_dim = 50, DTWDiag_fn = DTWDiag
         An N1-dimensional Euclidean point cloud
     Y: ndarray(N2, d)
         An N2-dimensional Euclidean point cloud
-    cost: float
-        Known cost to match X to Y between start and end
     min_dim: int
         If one of the dimensions of the rectangular region
         to the left or to the right is less than this number,
@@ -157,17 +156,22 @@ def DTWDiag_Backtrace(X, Y, cost, box = None, min_dim = 50, DTWDiag_fn = DTWDiag
     DTWDiag_fn: function handle
         A function handle to the function used to compute diagonal-based
         DTW, so that the GPU version can be easily swapped in
-    path_GT: ndarray(N, 2)
-        A ground-truth warping path to check against if debugging
     """
     if not box:
         box = [0, X.shape[0]-1, 0, Y.shape[0]-1]
     M = box[1]-box[0]+1
     N = box[3]-box[2]+1
-    K = M + N - 1
     
-    rtol = 1e-5
-    atol = 1e-8
+    # Stopping condition, revert to CPU
+    if M < min_dim or N < min_dim:
+        path = DTW_Backtrace(X[box[0]:box[1]+1, :], Y[box[2]:box[3]+1, :])['path']
+        for p in path:
+            p[0] += box[0]
+            p[1] += box[2]
+        return path
+    
+    # Otherwise, proceed with recursion
+    K = M + N - 1
     # Do the forward computation
     k_save = int(np.ceil(K/2.0))
     res1 = DTWDiag_fn(X, Y, k_save=k_save, k_stop=k_save, box=box)
@@ -179,24 +183,38 @@ def DTWDiag_Backtrace(X, Y, cost, box = None, min_dim = 50, DTWDiag_fn = DTWDiag
     res2 = DTWDiag_fn(X, Y, k_save=k_save_rev, k_stop=k_save_rev, box=box, reverse=True)
     res2['d0'], res2['d2'] = res2['d2'], res2['d0']
     res2['csm0'], res2['csm2'] = res2['csm2'], res2['csm0']
+    # Chop off extra diagonal elements
+    for res in res1, res2:
+        for i in range(3):
+            res['d%i'%i] = res['d%i'%i][0:res['csm%i'%i].size]
+    # Line up the reverse diagonals
     for d in ['d0', 'd1', 'd2', 'csm0', 'csm1', 'csm2']:
         res2[d] = res2[d][::-1]
     
-    plt.figure(figsize=(10, 5))
-    plt.subplot(121)
-    for i in range(3):
-        dleft = res1['d%i'%i]
-        csmleft = res1['csm%i'%i]
-        dright = res2['d%i'%i]
-        L = csmleft.size
-        diagsum = dleft[0:L] + dright[0:L] + csmleft
-        plt.plot(diagsum)
-        print(np.min(diagsum))
-    plt.subplot(122)
-    for i in range(3):
-        csmleft = res1['csm%i'%i]
-        csmright = res2['csm%i'%i]
-        plt.scatter(csmleft, csmright)
-    plt.show()
+    # Find the min cost over the three diagonals and split on that element
+    min_cost = np.inf
+    min_idxs = []
+    for k in range(3):
+        dleft = res1['d%i'%k]
+        dright = res2['d%i'%k]
+        csmright = res2['csm%i'%k]
+        diagsum = dleft + dright + csmright
+        idx = np.argmin(diagsum)
+        if diagsum[idx] < min_cost:
+            min_cost = diagsum[idx]
+            i, j = get_diag_indices(X.shape[0], Y.shape[0], k_save-2+k, box)
+            min_idxs = [i[idx], j[idx]]
+
+    # Recursively compute left paths
+    left_path = []
+    box_left = [box[0], min_idxs[0], box[2], min_idxs[1]]
+    left_path = DTWDiag_Backtrace(X, Y, box_left, min_dim, DTWDiag_fn)
+
+    # Recursively compute right paths
+    right_path = []
+    box_right = [min_idxs[0], box[1], min_idxs[1], box[3]]
+    right_path = DTWDiag_Backtrace(X, Y, box_right, min_dim, DTWDiag_fn)
     
+    return left_path + right_path[1::]
+
     
