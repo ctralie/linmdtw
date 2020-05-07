@@ -37,43 +37,38 @@ float c_dtw(float* X, float* Y, int* P, int M, int N, int d, int debug, float* U
                 }
             }
             else {
-                // Up
-                float up = -1;
-                if (i > 0) {
-                    up = S[(i-1)*N+j];
-                }
-                if (debug == 1) {
-                    U[i*N + j] = up; 
-                }
-                if (up > -1) {
-                    score = up;
-                    P[i*N + j] = UP;
-                }
-                
                 // Left
                 float left = -1;
                 if (j > 0) {
                     left = S[i*N + (j-1)];
                 }
-                if (debug == 1) {
-                    L[i*N + j] = left;
+                // Up
+                float up = -1;
+                if (i > 0) {
+                    up = S[(i-1)*N+j];
                 }
-                if (left > -1 && (left < score || score == -1)) {
-                    score = left;
-                    P[i*N + j] = LEFT;
-                }
-                
-                // Right
+                // Diag
                 float diag = -1;
                 if (i > 0 && j > 0) {
                     diag = S[(i-1)*N + (j-1)];
                 }
-                if (debug == 1) {
-                    UL[i*N + j] = diag;
+
+                if (left > -1) {
+                    score = left;
+                    P[i*N + j] = LEFT;
+                }
+                if (up > -1 && (up < score || score == -1)) {
+                    score = up;
+                    P[i*N + j] = UP;
                 }
                 if (diag > -1 && (diag < score || score == -1)) {
                     score = diag;
                     P[i*N + j] = DIAG;
+                }
+                if (debug == 1) {
+                    U[i*N + j] = up;
+                    L[i*N + j] = left;
+                    UL[i*N + j] = diag;
                 }
             }
             S[i*N + j] = score + dist;

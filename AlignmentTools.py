@@ -4,18 +4,20 @@ import matplotlib.pyplot as plt
 import scipy.sparse as sparse
 
 
-def get_diag_indices(M, N, k):
+def get_diag_indices(MTotal, NTotal, k, box = None, reverse=False):
     """
     Compute the indices on a diagonal into indices on an accumulated
     distance matrix
     Parameters
     ----------
-    M: int
-        Number of rows
-    N: int
-        Number of columns
+    MTotal: int
+        Total number of samples in X
+    NTotal: int
+        Total number of samples in Y
     k: int
         Index of the diagonal
+    box: list [XStart, XEnd, YStart, YEnd]
+        The coordinates of the box in which to search
     Returns
     -------
     i: ndarray(dim)
@@ -23,6 +25,10 @@ def get_diag_indices(M, N, k):
     j: ndarray(dim)
         Column indices
     """
+    if not box:
+        box = [0, MTotal-1, 0, NTotal-1]
+    M = box[1] - box[0] + 1
+    N = box[3] - box[2] + 1
     starti = k
     startj = 0
     if k > M-1:
@@ -33,6 +39,11 @@ def get_diag_indices(M, N, k):
     dim = np.sum(j < N) # Length of this diagonal
     i = i[0:dim]
     j = j[0:dim]
+    if reverse:
+        i = M-1-i
+        j = N-1-j
+    i += box[0]
+    j += box[2]
     return i, j
 
 def getCSM(X, Y):
