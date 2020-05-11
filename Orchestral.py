@@ -34,24 +34,22 @@ def align_pieces(filename1, filename2, sr, hop_length, do_mfcc, do_cpu, do_stret
     X1 = np.ascontiguousarray(X1, dtype=np.float32)
     X2 = np.ascontiguousarray(X2, dtype=np.float32)
 
-    dist_fn = getCSMCorresp
-
     tic = time.time()
-    stats = {'totalCells':0, 'M':X1.shape[0], 'N':X2.shape[0], 'timeStart':tic}
+    metadata = {'totalCells':0, 'M':X1.shape[0], 'N':X2.shape[0], 'timeStart':tic}
     print("Starting GPU Alignment...")
-    path_gpu = DTWDiag_Backtrace(X1, X2, DTWDiag_fn=DTWDiag_GPU, stats=stats, dist_fn=dist_fn)
+    path_gpu = DTWDiag_Backtrace(X1, X2, DTWDiag_fn=DTWDiag_GPU, metadata=metadata)
     print("Time GPU", time.time()-tic)
     path_gpu = np.array(path_gpu)
     res = {"path_gpu":path_gpu}
 
     if do_cpu:
         tic = time.time()
-        path_cpu = DTW_Backtrace(X1, X2, dist_fn=dist_fn)
+        path_cpu = DTW_Backtrace(X1, X2)
         print("Time CPU", time.time()-tic)
         path_cpu = np.array(path_cpu)
         hist1 = getAlignmentCellDists(path_cpu, path_gpu)['hist']
         hist2 = getAlignmentCellDists(path_gpu, path_cpu)['hist']
-        json.dump([hist1, hist2], open("{}_gpucpu.json".format(filename1), "w"))
+        json.dump([hist1, hist2], open("{}_{}_gpucpu.json".format(filename1, prefix), "w"))
         res["path_cpu"] = path_cpu
 
     path_gpu_arr = path_gpu.copy()
@@ -77,23 +75,32 @@ def align_pieces(filename1, filename2, sr, hop_length, do_mfcc, do_cpu, do_stret
         subprocess.call(["ffmpeg", "-i", wavfilename, mp3filename])
         os.remove(wavfilename)
 
-hop_length = 512
-sr = 22050
-for do_mfcc in [False, True]:
-    for i in range(1, 9):
-        try:
-            filename1 = "OrchestralPieces/Short/%i_1.webm"%i
-            filename2 = "OrchestralPieces/Short/%i_2.webm"%i
-            print("Doing ", filename1, filename2)
-            align_pieces(filename1, filename2, sr, hop_length, do_mfcc=do_mfcc, do_cpu=True, do_stretch=True)
-        except:
-            print("ERROR")
-    """
-    for i in range(1, 5):
-        try:
-            filename1 = glob.glob("OrchestralPieces/Long/%i_1*"%i)[0]
-            filename2 = glob.glob("OrchestralPieces/Long/%i_2*"%i)[0]
-            align_pieces(filename1, filename2, sr, hop_length, do_mfcc=do_mfcc, do_cpu=False, do_stretch=False)
-        except:
-            print("ERROR")
-    """
+if __name__ == '__main__2':
+    hop_length = 512
+    sr = 22050
+    for do_mfcc in [False, True]:
+        for i in range(1, 9):
+            try:
+                filename1 = "OrchestralPieces/Short/%i_1.webm"%i
+                filename2 = "OrchestralPieces/Short/%i_2.webm"%i
+                print("Doing ", filename1, filename2)
+                align_pieces(filename1, filename2, sr, hop_length, do_mfcc=do_mfcc, do_cpu=True, do_stretch=True)
+            except:
+                print("ERROR")
+        """
+        for i in range(1, 5):
+            try:
+                filename1 = glob.glob("OrchestralPieces/Long/%i_1*"%i)[0]
+                filename2 = glob.glob("OrchestralPieces/Long/%i_2*"%i)[0]
+                align_pieces(filename1, filename2, sr, hop_length, do_mfcc=do_mfcc, do_cpu=False, do_stretch=False)
+            except:
+                print("ERROR")
+        """
+
+if __name__ == '__main__':
+    hop_length = 512
+    sr = 22050
+    filename1 = "OrchestralPieces/Short/6_1.webm"
+    filename2 = "OrchestralPieces/Short/6_2.webm"
+    print("Doing ", filename1, filename2)
+    align_pieces(filename1, filename2, sr, hop_length, do_mfcc=True, do_cpu=True, do_stretch=True)
