@@ -7,11 +7,9 @@ import cython
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def DTW(numpy.ndarray[float,ndim=2,mode="c"] X not None, numpy.ndarray[float,ndim=2,mode="c"] Y not None, int debug):
-    assert(X.shape[1] == Y.shape[1])
-    cdef int M = X.shape[0]
-    cdef int N = Y.shape[0]
-    cdef int d = X.shape[1]
+def DTW(numpy.ndarray[float,ndim=2,mode="c"] CSM not None, int debug):
+    cdef int M = CSM.shape[0]
+    cdef int N = CSM.shape[1]
     cdef int[:, :] P = numpy.zeros((M, N), dtype='int32')
     cdef float[:, :,] U 
     cdef float[:, :,] L
@@ -25,7 +23,7 @@ def DTW(numpy.ndarray[float,ndim=2,mode="c"] X not None, numpy.ndarray[float,ndi
         L = numpy.zeros((1, 1), dtype='float32')
         UL = numpy.zeros((1, 1), dtype='float32')
     cdef float[:, :,] S = numpy.zeros((M, N), dtype='float32')
-    cost = dynseqalign.c_dtw(&X[0,0], &Y[0,0], &P[0,0], M, N, d, debug, &U[0, 0], &L[0, 0], &UL[0, 0], &S[0, 0])
+    cost = dynseqalign.c_dtw(&CSM[0,0], &P[0,0], M, N, debug, &U[0, 0], &L[0, 0], &UL[0, 0], &S[0, 0])
     ret = {'cost':cost, 'P':P}
     if debug == 1:
         ret['U'] = U

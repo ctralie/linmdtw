@@ -5,7 +5,7 @@
 #define UP 1
 #define DIAG 2
 
-float c_dtw(float* X, float* Y, int* P, int M, int N, int d, int debug, float* U, float* L, float* UL, float* S) {
+float c_dtw(float* CSM, int* P, int M, int N, int debug, float* U, float* L, float* UL, float* S) {
     float dist;
     if (debug == 1) {
         for (int i = 0; i < M; i++) {
@@ -19,12 +19,7 @@ float c_dtw(float* X, float* Y, int* P, int M, int N, int d, int debug, float* U
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < N; j++) {
             // Step 1: Compute the Euclidean distance
-            dist = 0.0;
-            for (int k = 0; k < d; k++) {
-                double diff = X[i*d + k] - Y[j*d + k];
-                dist += diff*diff;
-            }
-            dist = sqrt(dist);
+            dist = CSM[i*N + j];
 
             // Step 2: Do dynamic progamming step
             float score = -1;

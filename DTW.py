@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io as sio
-from AlignmentTools import get_diag_indices
+from AlignmentTools import *
 
-def DTW(X, Y, debug=False):
+def DTW(X, Y, debug=False, dist_fn = getCSMCorresp):
     """
     Compute dynamic time warping between two time-ordered
     point clouds in Euclidean space, using cython on the 
@@ -16,11 +16,20 @@ def DTW(X, Y, debug=False):
         A d-dimensional Euclidean point cloud with N points
     debug: boolean
         Whether to keep track of debugging information
+    dist_fn: function: (ndarray(N, d), ndarray(N, d)) -> ndarray(N)
+        A function for computing distances between two parallel arrays
     """
     import dynseqalign
-    return dynseqalign.DTW(X, Y, int(debug))
+    M = X.shape[0]
+    N = Y.shape[0]
+    CSM = np.zeros((M, N), dtype=X.dtype)
+    row = np.zeros(N, dtype=int)
+    for i in range(M):
+        row[:] = i
+        CSM[i, :] = dist_fn(X[row, :], Y)
+    return dynseqalign.DTW(CSM, int(debug))
 
-def DTW_Backtrace(X, Y, debug=False):
+def DTW_Backtrace(X, Y, debug=False, dist_fn = getCSMCorresp):
     """
     Compute dynamic time warping between two time-ordered
     point clouds in Euclidean space, using cython on the 
@@ -33,10 +42,11 @@ def DTW_Backtrace(X, Y, debug=False):
         A d-dimensional Euclidean point cloud with N points
     debug: boolean
         Whether to keep track of debugging information
+    dist_fn: function: (ndarray(N, d), ndarray(N, d)) -> ndarray(N)
+        A function for computing distances between two parallel arrays
     """
-    res = DTW(X, Y, debug)
+    res = DTW(X, Y, debug, dist_fn)
     res['P'] = np.asarray(res['P'])
-
     if debug:
         for key in ['U', 'L', 'UL', 'S']:
             res[key] = np.asarray(res[key])
@@ -50,11 +60,13 @@ def DTW_Backtrace(X, Y, debug=False):
         j += s[1]
         path.append([i, j])
     path.reverse()
-    res['path'] = path
-    return res
+    if debug:
+        res['path'] = path
+        return res
+    return path
     
 
-def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=False):
+def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=False, dist_fn = getCSMCorresp, stats=None):
     """
     Parameters
     ----------
@@ -72,7 +84,10 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fal
         Whether we're going in reverse
     debug: boolean
         Whether to save the accumulated cost matrix
-    
+    dist_fn: function: (ndarray(N, d), ndarray(N, d)) -> ndarray(N)
+        A function for computing distances between two parallel arrays
+    stats: dictionary
+        A dictionary for storing information about the computation
     Returns
     -------
     {
@@ -118,7 +133,9 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fal
     for k in range(M+N-1):
         dynseqalign.DTW_Diag_Step(d0, d1, d2, csm0, csm1, M, N, diagLen, k, int(debug), U, L, UL, S)
         i, j = get_diag_indices(X.shape[0], Y.shape[0], k, box, reverse)
-        csm2 = np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
+        csm2 = dist_fn(X[i, :], Y[j, :])
+        if stats:
+            update_alignment_stats(stats, csm2.size)
         if k == k_save:
             res['d0'] = d0.copy()
             res['csm0'] = csm0.copy()
@@ -141,7 +158,7 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fal
         res['S'] = S
     return res
 
-def DTWDiag_Backtrace(X, Y, box = None, min_dim = 50, DTWDiag_fn = DTWDiag):
+def DTWDiag_Backtrace(X, Y, box = None, min_dim = 1000, DTWDiag_fn = DTWDiag, dist_fn = getCSMCorresp, stats = None):
     """
     Parameters
     ----------
@@ -156,15 +173,21 @@ def DTWDiag_Backtrace(X, Y, box = None, min_dim = 50, DTWDiag_fn = DTWDiag):
     DTWDiag_fn: function handle
         A function handle to the function used to compute diagonal-based
         DTW, so that the GPU version can be easily swapped in
+    dist_fn: function: (ndarray(N, d), ndarray(N, d)) -> ndarray(N)
+        A function for computing distances between two parallel arrays
+    stats: dictionary
+        A dictionary for storing information about the computation
     """
     if not box:
         box = [0, X.shape[0]-1, 0, Y.shape[0]-1]
     M = box[1]-box[0]+1
     N = box[3]-box[2]+1
-    
+
     # Stopping condition, revert to CPU
     if M < min_dim or N < min_dim:
-        path = DTW_Backtrace(X[box[0]:box[1]+1, :], Y[box[2]:box[3]+1, :])['path']
+        if stats:
+            stats['totalCells'] += M*N
+        path = DTW_Backtrace(X[box[0]:box[1]+1, :], Y[box[2]:box[3]+1, :])
         for p in path:
             p[0] += box[0]
             p[1] += box[2]
@@ -174,13 +197,13 @@ def DTWDiag_Backtrace(X, Y, box = None, min_dim = 50, DTWDiag_fn = DTWDiag):
     K = M + N - 1
     # Do the forward computation
     k_save = int(np.ceil(K/2.0))
-    res1 = DTWDiag_fn(X, Y, k_save=k_save, k_stop=k_save, box=box)
+    res1 = DTWDiag_fn(X, Y, k_save=k_save, k_stop=k_save, box=box, dist_fn = dist_fn, stats=stats)
 
     # Do the backward computation
     k_save_rev = k_save
     if K%2 == 0:
         k_save_rev += 1
-    res2 = DTWDiag_fn(X, Y, k_save=k_save_rev, k_stop=k_save_rev, box=box, reverse=True)
+    res2 = DTWDiag_fn(X, Y, k_save=k_save_rev, k_stop=k_save_rev, box=box, reverse=True, dist_fn = dist_fn, stats=stats)
     res2['d0'], res2['d2'] = res2['d2'], res2['d0']
     res2['csm0'], res2['csm2'] = res2['csm2'], res2['csm0']
     # Chop off extra diagonal elements
@@ -208,12 +231,12 @@ def DTWDiag_Backtrace(X, Y, box = None, min_dim = 50, DTWDiag_fn = DTWDiag):
     # Recursively compute left paths
     left_path = []
     box_left = [box[0], min_idxs[0], box[2], min_idxs[1]]
-    left_path = DTWDiag_Backtrace(X, Y, box_left, min_dim, DTWDiag_fn)
+    left_path = DTWDiag_Backtrace(X, Y, box_left, min_dim, DTWDiag_fn, dist_fn, stats)
 
     # Recursively compute right paths
     right_path = []
     box_right = [min_idxs[0], box[1], min_idxs[1], box[3]]
-    right_path = DTWDiag_Backtrace(X, Y, box_right, min_dim, DTWDiag_fn)
+    right_path = DTWDiag_Backtrace(X, Y, box_right, min_dim, DTWDiag_fn, dist_fn, stats)
     
     return left_path + right_path[1::]
 

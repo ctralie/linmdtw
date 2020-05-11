@@ -46,6 +46,93 @@ def get_diag_indices(MTotal, NTotal, k, box = None, reverse=False):
     j += box[2]
     return i, j
 
+def update_alignment_stats(stats, newcells):
+    """
+    Add new amount of cells to the total cells processed,
+    and print out a percentage point if there's been progress
+    Parameters
+    ----------
+    newcells: int
+        The number of new cells that are being processed
+    stats: dictionary
+        Dictionary with 'M', 'N', 'totalCells', all ints
+        and 'timeStart'
+    """
+    import time
+    denom = stats['M']*stats['N']
+    before = np.floor(50*stats['totalCells']/denom)
+    stats['totalCells'] += newcells
+    after = np.floor(50*stats['totalCells']/denom)
+    if after > before:
+        print("Parallel Alignment {}% , at time {} ".format(before, time.time()-stats['timeStart']))
+    
+
+def getCSMCorresp(X, Y):
+    """
+    Return the Euclidean distance between points in
+    X and Y which are in correspondence
+    Paramters
+    ---------
+    X: ndarray(N, d)
+        A d-dimensional Euclidean point cloud with M points
+    Y: ndarray(N, d)
+        A d-dimensional Euclidean point cloud with N points
+    Returns
+    -------
+    ndarray(N):
+        The distances
+    """
+    return np.sqrt(np.sum((X - Y)**2, 1))
+
+def getCSML1Corresp(X, Y):
+    """
+    Return the L1 distance between points in
+    X and Y which are in correspondence
+    Paramters
+    ---------
+    X: ndarray(N, d)
+        A d-dimensional Euclidean point cloud with M points
+    Y: ndarray(N, d)
+        A d-dimensional Euclidean point cloud with N points
+    Returns
+    -------
+    ndarray(N):
+        The distances
+    """
+    return np.sum(np.abs(X-Y), 1)
+
+def getCSMCosineCorresp(X, Y):
+    """
+    Return the cosine distance between points in
+    X and Y which are in correspondence
+    Paramters
+    ---------
+    X: ndarray(N, d)
+        A d-dimensional Euclidean point cloud with M points
+    Y: ndarray(N, d)
+        A d-dimensional Euclidean point cloud with N points
+    Returns
+    -------
+    ndarray(N):
+        The distances
+    """
+    XMag = np.sqrt(np.sum(X**2, 1))
+    XMag[XMag == 0] = 1
+    YMag = np.sqrt(np.sum(Y**2, 1))
+    YMag[YMag == 0] = 1
+    return 1 - np.sum(X*Y, 1)/(XMag*YMag)
+
+def getSplitCSMEuclideanCosineCorresp(X, Y, lam = 0.1):
+    """
+    Return the Euclidean distance of the first half
+    plus the cosine distance of the second half
+    """
+    d = int(X.shape[1]/2)
+    x1 = getCSMCorresp(X[:, 0:d], Y[:, 0:d])
+    x2 = lam*getCSMCosineCorresp(X[:, d::], Y[:, d::])
+    return x1+x2
+
+
 def getCSM(X, Y):
     """
     Return the Euclidean cross-similarity matrix between X and Y
