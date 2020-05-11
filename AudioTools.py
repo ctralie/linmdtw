@@ -49,7 +49,20 @@ def getSlidingWindow(X, Win, decay=True):
         Y[0:M, dim*k:dim*(k+1)] = Xk
     return Y
 
-def getC0Onsets(x, sr, hop_length, lag=10, do_plot=False):
+def getDLNC0(x, sr, hop_length, lag=10, do_plot=False):
+    """
+    Compute decaying locally adaptive normalize C0 (DLNC0) features
+    Parameters
+    ----------
+    x: ndarray(N)
+        Audio samples
+    sr: int
+        Sample rate
+    hop_length: int
+        Hop size between windows
+    lag: int
+        Number of lags to include
+    """
     X = np.abs(librosa.cqt(x, sr=sr, hop_length=hop_length, bins_per_octave=12))
     # Half-wave rectify discrete derivative
     #X = librosa.amplitude_to_db(X, ref=np.max)
@@ -95,13 +108,36 @@ def getC0Onsets(x, sr, hop_length, lag=10, do_plot=False):
         plt.show()
     return XRet
 
-def get_mixed_LNC0_Crema(x, sr, hop_length, lam=0.1):
-    X1 = getC0Onsets(x, sr, hop_length).T
+def get_mixed_DLNC0_CENS(x, sr, hop_length, lam=0.1):
+    """
+    Concatenate DLNC0 to CENS
+    """
+    X1 = getDLNC0(x, sr, hop_length).T
     X2 = lam*librosa.feature.chroma_cens(y=x, sr=sr, hop_length=hop_length).T
     return np.concatenate((X1, X2), axis=1)
 
-def get_mfcc_mod(x, sr, hop_length, n_mfcc=120, drop=20, finaldim=20, n_fft = 2048):
+def get_mfcc_mod(x, sr, hop_length, n_mfcc=120, drop=20, finaldim=-1, n_fft = 2048):
+    """
+    Compute the MFCC_mod features, as described in Gadermaier 2019
+    Parameters
+    ----------
+    x: ndarray(N)
+        Audio samples
+    sr: int
+        Sample rate
+    hop_length: int
+        Hop size between windows
+    n_mfcc: int
+        Number of mfcc coefficients to compute
+    drop: int
+        Index under which to ignore coefficients
+    finaldim: int
+        Resize dimension
+    n_fft: int
+        Number of fft points to use in each window
+    """
     X = librosa.feature.mfcc(y=x, sr=sr, hop_length=hop_length, n_mfcc = n_mfcc, n_fft=n_fft, htk=True)
     X = X[drop::, :].T
-    X = skimage.transform.resize(X, (X.shape[0], finaldim), anti_aliasing=True, mode='constant')
+    if finaldim > -1:
+        X = skimage.transform.resize(X, (X.shape[0], finaldim), anti_aliasing=True, mode='constant')
     return X
