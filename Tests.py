@@ -31,19 +31,31 @@ def test_ordinary_vs_diag_alignment():
     X = np.array(X, dtype=np.float32)
     Y = np.array(Y, dtype=np.float32)
 
+    # Do parallel DTW
+    #res2 = DTWDiag(X, Y)
+    metadata = {'timeStart':time.time(), 'M':X.shape[0], 'N':Y.shape[0], 'totalCells':0}
+    res2 = DTWDiag_GPU(X, Y, metadata=metadata, debug=True, reverse=True)
+
+    cost = res2['cost']
+    print("Cost diagonal: ", cost)
+    
     res = DTW_Backtrace(X, Y, debug=True)
     path = res['path']
     cost = res['cost']
     print("Cost ordinary: ", cost)
 
-    # Do parallel DTW
-    #res2 = DTWDiag_GPU(X, Y)
-    res2 = DTWDiag(X, Y)
-    cost = res2['cost']
-    print("Cost diagonal: ", cost)
+    plt.clf()
+    for i, key in enumerate(['U', 'L', 'UL', 'S']):
+        plt.subplot(2, 2, i+1)
+        plt.imshow(res2[key])
+        plt.colorbar()
+        plt.title(key)
+    plt.show()
 
     tic = time.time()
-    path2 = DTWDiag_Backtrace(X, Y)
+    metadata['totalCells'] = 0
+    metadata['timeStart'] = time.time()
+    path2 = DTWDiag_Backtrace(X, Y, DTWDiag_fn=DTWDiag_GPU, metadata=metadata)
     print("Elapsed Time: ", time.time()-tic)
     path2 = np.array(path2)
     path = np.array(path)
@@ -130,10 +142,10 @@ def test_timing_synthetic(dim = 20):
 
             # Compute alignment on GPU
             tic = time.time()
-            stats = {'totalCells':0, 'M':X.shape[0], 'N':Y.shape[0], 'startTime':time.time()}
-            path_gpu = DTWDiag_Backtrace(X, Y, DTWDiag_fn=DTWDiag_GPU, stats=stats)
+            metadata = {'totalCells':0, 'M':X.shape[0], 'N':Y.shape[0], 'startTime':time.time()}
+            path_gpu = DTWDiag_Backtrace(X, Y, DTWDiag_fn=DTWDiag_GPU, metadata=metadata)
             MN = X.shape[0]*Y.shape[0]
-            perc = 100*(stats['totalCells']-MN)/MN
+            perc = 100*(metadata['totalCells']-MN)/MN
             print("\n%.3g Percent Cells\n\n"%perc)
             
             trial['time_align_gpu'] = time.time()-tic
@@ -143,7 +155,7 @@ def test_timing_synthetic(dim = 20):
             # Compute alignment discrepancy
             trial['discrep1'] = getAlignmentCellDists(path_cpu, path_gpu)['hist']
             trial['discrep2'] = getAlignmentCellDists(path_gpu, path_cpu)['hist']
-            trial['totalCells'] = int(stats['totalCells'])
+            trial['totalCells'] = int(metadata['totalCells'])
             trial['N'] = int(N)
 
             print(trial)
@@ -152,5 +164,5 @@ def test_timing_synthetic(dim = 20):
             count += 1
 
 if __name__ == '__main__':
-    #test_ordinary_vs_diag_alignment()
-    test_timing_synthetic()
+    test_ordinary_vs_diag_alignment()
+    #test_timing_synthetic()

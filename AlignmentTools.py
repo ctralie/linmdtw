@@ -3,6 +3,35 @@ import scipy.interpolate as interp
 import matplotlib.pyplot as plt
 import scipy.sparse as sparse
 
+def get_diag_len(box, k):
+    """
+    Return the number of elements in this particular diagonal
+    Parameters
+    ----------
+    MTotal: int
+        Total number of samples in X
+    NTotal: int
+        Total number of samples in Y
+    k: int
+        Index of the diagonal
+    Returns
+    -------
+    Number of elements
+    """
+    M = box[1] - box[0] + 1
+    N = box[3] - box[2] + 1
+    starti = k
+    startj = 0
+    if k >= M:
+        starti = M-1
+        startj = k - (M-1)
+    endj = k
+    endi = 0
+    if k >= N:
+        endj = N-1
+        endi = k - (N-1)
+    return endj-startj+1
+
 
 def get_diag_indices(MTotal, NTotal, k, box = None, reverse=False):
     """
@@ -46,7 +75,7 @@ def get_diag_indices(MTotal, NTotal, k, box = None, reverse=False):
     j += box[2]
     return i, j
 
-def update_alignment_stats(stats, newcells):
+def update_alignment_metadata(metadata = None, newcells = 0):
     """
     Add new amount of cells to the total cells processed,
     and print out a percentage point if there's been progress
@@ -54,75 +83,21 @@ def update_alignment_stats(stats, newcells):
     ----------
     newcells: int
         The number of new cells that are being processed
-    stats: dictionary
+    metadata: dictionary
         Dictionary with 'M', 'N', 'totalCells', all ints
         and 'timeStart'
     """
-    import time
-    denom = stats['M']*stats['N']
-    before = np.floor(50*stats['totalCells']/denom)
-    stats['totalCells'] += newcells
-    after = np.floor(50*stats['totalCells']/denom)
-    if after > before:
-        print("Parallel Alignment {}% , at time {} ".format(before, time.time()-stats['timeStart']))
-    
-
-def getCSMCorresp(X, Y, i, j):
-    """
-    Return the Euclidean distance between points in
-    X and Y which are in correspondence
-    Paramters
-    ---------
-    X: ndarray(M, d)
-        A d-dimensional Euclidean point cloud with M points
-    Y: ndarray(N, d)
-        A d-dimensional Euclidean point cloud with N points
-    i: ndarray(K)
-        Indices to pull out of the first point cloud
-    j: ndarray(K)
-        Corresponding indices to pull out of the second point cloud
-    Returns
-    -------
-    ndarray(K):
-        The distances
-    """
-    return np.sqrt(np.sum((X[i, :] - Y[j, :])**2, 1))
-
-def getCSMCosineCorresp(X, Y, i, j):
-    """
-    Return the cosine distance between points in
-    X and Y which are in correspondence
-    Paramters
-    ---------
-    X: ndarray(M, d)
-        A d-dimensional Euclidean point cloud with M points
-    Y: ndarray(N, d)
-        A d-dimensional Euclidean point cloud with N points
-    i: ndarray(K)
-        Indices to pull out of the first point cloud
-    j: ndarray(K)
-        Corresponding indices to pull out of the second point cloud
-    Returns
-    -------
-    ndarray(K):
-        The distances
-    """
-    XMag = np.sqrt(np.sum(X[i, :]**2, 1))
-    XMag[XMag == 0] = 1
-    YMag = np.sqrt(np.sum(Y[j, :]**2, 1))
-    YMag[YMag == 0] = 1
-    return 1 - np.sum(X[i, :]*Y[j, :], 1)/(XMag*YMag)
-
-def getSplitCSMEuclideanCosineCorresp(X, Y, i, j, lam = 0.1):
-    """
-    Return the Euclidean distance of the first half
-    plus the cosine distance of the second half
-    """
-    d = int(X.shape[1]/2)
-    x1 = getCSMCorresp(X[:, 0:d], Y[:, 0:d], i, j)
-    x2 = lam*getCSMCosineCorresp(X[:, d::], Y[:, d::], i, j)
-    return x1+x2
-
+    if metadata:
+        if 'M' in metadata and 'N' in metadata and 'totalCells' in metadata:
+            import time
+            denom = metadata['M']*metadata['N']
+            before = np.floor(50*metadata['totalCells']/denom)
+            metadata['totalCells'] += newcells
+            after = np.floor(50*metadata['totalCells']/denom)
+            if after > before:
+                print("Parallel Alignment {}% ".format(before), end='')
+                if 'timeStart' in metadata:
+                    print("Elapsed time: {}".format(time.time()-metadata['timeStart']))
 
 def getCSM(X, Y):
     """
