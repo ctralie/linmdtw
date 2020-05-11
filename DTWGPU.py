@@ -83,7 +83,7 @@ def DTWDiag_GPU(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug
     for k in range(M+N-1):
         DTW_Step_(d0, d1, d2, csm0, csm1, np.array(M, dtype=np.int32), np.array(N, dtype=np.int32), diagLen, np.array(k, dtype=np.int32), np.array(int(debug), dtype=np.int32), U, L, UL, S, block=(int(threadsPerBlock), 1, 1), grid=(gridSize, 1))
         i, j = get_diag_indices(X.shape[0], Y.shape[0], k, box, reverse)
-        csm2 = dist_fn(X[i, :], Y[j, :])
+        csm2 = dist_fn(X, Y, i, j)
         if stats:
             update_alignment_stats(stats, csm2.size)
         if k == k_save:

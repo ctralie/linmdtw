@@ -24,9 +24,10 @@ def DTW(X, Y, debug=False, dist_fn = getCSMCorresp):
     N = Y.shape[0]
     CSM = np.zeros((M, N), dtype=X.dtype)
     row = np.zeros(N, dtype=int)
+    col = np.arange(N)
     for i in range(M):
         row[:] = i
-        CSM[i, :] = dist_fn(X[row, :], Y)
+        CSM[i, :] = dist_fn(X, Y, row, col)
     return dynseqalign.DTW(CSM, int(debug))
 
 def DTW_Backtrace(X, Y, debug=False, dist_fn = getCSMCorresp):
@@ -133,7 +134,7 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fal
     for k in range(M+N-1):
         dynseqalign.DTW_Diag_Step(d0, d1, d2, csm0, csm1, M, N, diagLen, k, int(debug), U, L, UL, S)
         i, j = get_diag_indices(X.shape[0], Y.shape[0], k, box, reverse)
-        csm2 = dist_fn(X[i, :], Y[j, :])
+        csm2 = dist_fn(X, Y, i, j)
         if stats:
             update_alignment_stats(stats, csm2.size)
         if k == k_save:
