@@ -25,30 +25,6 @@ def load_audio(filename, sr = 44100):
     os.remove(wavfilename)
     return y, sr
 
-def normalize(X):
-    norms = np.sqrt(np.sum(X**2, 1))
-    norms[norms == 0] = 1
-    return X/norms[:, None]
-
-def getRectifiedDiff(X):
-    ret = np.zeros_like(X)
-    ret[0:-1, :] = X[1::, :] - X[0:-1, :]
-    ret[ret < 0] = 0
-    return ret
-
-def getSlidingWindow(X, Win, decay=True):
-    Y = np.zeros((X.shape[0], X.shape[1]*Win), dtype=X.dtype)
-    M = X.shape[0]-Win+1
-    decays = np.linspace(0, 1, Win+1)[1::]
-    decays = np.sqrt(decays[::-1])
-    dim = X.shape[1]
-    for k in range(Win):
-        Xk =X[k:k+M, :]
-        if decay:
-            Xk *= decays[k]
-        Y[0:M, dim*k:dim*(k+1)] = Xk
-    return Y
-
 def getDLNC0(x, sr, hop_length, lag=10, do_plot=False):
     """
     Compute decaying locally adaptive normalize C0 (DLNC0) features
