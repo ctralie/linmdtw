@@ -345,7 +345,7 @@ def getAlignmentCellDists(P1, P2):
         hist[dist] += 1
     return {'dists':dists, 'hist':hist}
 
-if __name__ == '__main__':
+def testAlignmentError():
     #Test out alignment errors
     N = 100
     t = np.linspace(0, 1, N)
