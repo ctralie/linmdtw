@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io as sio
 from scipy import sparse
+import time
 from AlignmentTools import *
 from DTW import *
 
@@ -104,8 +105,9 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
 def test_fastdtw():
     from fastdtw import fastdtw as fastdtw2
     from scipy.spatial.distance import euclidean
-    import time
+    from Tests import get_figure8s
 
+    X, Y = get_figure8s(800, 600)
     tic = time.time()
     res1 = DTW_Backtrace(X, Y, debug=True)
     print("Elapsed time ordinary", time.time()-tic)
