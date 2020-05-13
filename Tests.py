@@ -7,6 +7,19 @@ import time
 import json
 import scipy.io as sio
 
+def get_figure8s(M, N):
+    t = 2*np.pi*np.linspace(0, 1, M)**2
+    X = np.zeros((M, 2))
+    X[:, 0] = np.cos(t)
+    X[:, 1] = np.sin(9*t)
+    t = 2*np.pi*np.linspace(0, 1, N)
+    Y = np.zeros((N, 2))
+    Y[:, 0] = 1.1*np.cos(t)
+    Y[:, 1] = 1.1*np.sin(2*t)
+    X = np.ascontiguousarray(X, dtype=np.float32)
+    Y = np.ascontiguousarray(Y, dtype=np.float32)
+    return X, Y
+
 def test_ordinary_vs_diag_alignment():
     """
     Test ordinary CPU backtracing against the GPU recursive
@@ -14,22 +27,7 @@ def test_ordinary_vs_diag_alignment():
     """
     # Setup point clouds
     initParallelAlgorithms()
-    M = 8000
-    t = 2*np.pi*np.linspace(0, 1, M)**2
-    X = np.zeros((M, 2))
-    X[:, 0] = np.cos(t)
-    X[:, 1] = np.sin(9*t)
-    N = 6000
-    t = 2*np.pi*np.linspace(0, 1, N)
-    Y = np.zeros((N, 2))
-    Y[:, 0] = 1.1*np.cos(t)
-    Y[:, 1] = 1.1*np.sin(2*t)
-    X = X
-    Y = Y
-
-    # Do ordinary DTW as a reference
-    X = np.array(X, dtype=np.float32)
-    Y = np.array(Y, dtype=np.float32)
+    X, Y = get_figure8s(M=8000, N=6000)
 
     # Do parallel DTW
     #res2 = DTWDiag(X, Y)
@@ -73,7 +71,7 @@ def test_ordinary_vs_diag_alignment():
     print("Cost path ordinary: ", np.sum(D[path[:, 0], path[:, 1]]))
     print("Cost path diagonal: ", np.sum(D[path2[:, 0], path2[:, 1]]))
 
-    hist = getAlignmentCellDists(path, path2)['hist']
+    hist = get_hist(getAlignmentCellDists(path, path2))
     print(hist)
 
     plt.scatter(path[:, 0], path[:, 1])
@@ -153,8 +151,8 @@ def test_timing_synthetic(dim = 20):
             trial['cost_path_gpu'] = float(np.sum(D[path_gpu[:, 0], path_gpu[:, 1]]))
 
             # Compute alignment discrepancy
-            trial['discrep1'] = getAlignmentCellDists(path_cpu, path_gpu)['hist']
-            trial['discrep2'] = getAlignmentCellDists(path_gpu, path_cpu)['hist']
+            trial['discrep1'] = get_hist(getAlignmentCellDists(path_cpu, path_gpu))
+            trial['discrep2'] = get_hist(getAlignmentCellDists(path_gpu, path_cpu))
             trial['totalCells'] = int(metadata['totalCells'])
             trial['N'] = int(N)
 

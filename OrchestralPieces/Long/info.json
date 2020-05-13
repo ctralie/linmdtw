@@ -15,8 +15,8 @@
 ],
 
 [
-{"url": "https://www.youtube.com/watch?v=7_u2xq1ls7s", "info": "Carl Maria von Weber Der Freischutz, Carlos Kleiber"}, 
-{"url": "https://www.youtube.com/watch?v=8ANPxz58lzI", "info": "Der Freischutz Act I, II, III"}
+{"url": "https://www.youtube.com/watch?v=meGuEnjERxc", "info": "Wagner - Das Rheingold (The Rhine Gold) Full, Gustav Kuhn"}, 
+{"url": "https://www.youtube.com/watch?v=VsR11uFzBJg", "info": "Wagner - Das Rheingold (The Rhine Gold) Full, Georg Solti cond/ Vienna Philharmonic Orchestra"}
 ],
 
 [ 
@@ -37,6 +37,63 @@
 [
 {"url":"https://www.youtube.com/watch?v=jFeRels8AyY", "info":"Simple Symphony, Benjamin Britten, conducting the English Chamber Orchestra"},
 {"url":"https://www.youtube.com/watch?v=OhKcPg4GCus", "info":"New York Classical Players, Dongmin Kim, conductor, April 9, 2017, Church of the Heavenly Rest, New York, NY", "start":6, "end":1031}
+],
+
+
+[
+{"url":"https://www.youtube.com/watch?v=Isic2Z2e2xs", "info":"Holst, The Planets, Boston Symphony Orchestra, William Steinberg"},
+{"url":"https://www.youtube.com/watch?v=UmOTMkoCCkM", "info":"Holst, The Planets, Royal Philharmonic Orchestra"}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=8e3rVcSy3IQ", "info":"Copland Appalachian Spring, Bernstein"},
+{"url":"https://www.youtube.com/watch?v=WVahuS9hk_s", "info":"Copland, Appalachian Spring, Ulster Orchestra, Thierry Fischer, 2006"}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=dbfa86bTD34", "info":"Beethoven's 6th Symphony 'Pastoral', Frans Bruggen (Orchestra of the 18th Century)"},
+{"url":"https://www.youtube.com/watch?v=t2VY33VXnrQ",
+"info":"Beethoven's 6th Symphony 'Pastoral', Bernstein"}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=o3rir1bWTyI", "info":"Maurice Ravel: Ma mère l'Oye, Radio Filharmonisch Orkest o.l.v. Edward Gardner", "end":1098},
+{"url":"https://www.youtube.com/watch?v=5U7osEigQZM", "info":"Maurice Ravel - Ma Mère l'Oye, Prof. Nicolás Pasquet"}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=Cxj8vSS2ELU", "info":"Tchaikovsky: Romeo & Juliet / Gergiev,  London Symphony Orchestra, BBC Proms 2007", "start":4, "end":1190},
+{"url":"https://www.youtube.com/watch?v=f6qZUCi7ToQ", "info":"Tchaikovsky: Fantasy Overture 'Romeo and Juliet' - Radio Philharmonic Orchestra", "start":4, "end":1139}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=NdZ6OkyPB6E", "info":"Mahler - Symphony No 1 in D major - Kubelik"},
+{"url":"https://www.youtube.com/watch?v=cQFjDBFXN58", "info":"Mahler: Symphony No. 1 The Titan / Bernstein · Vienna Philharmonic Orchestra", "start":45, "end":3281}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=_UqkLysDfxc", "info":"The Stavanger Symphony Orchestra perform Ernest Bloch - Schelomo (1916): Rhapsodie Hébraïque. Truls Mørk, cello Markus Stenz, conductor", "start":13, "end":1382}, 
+{"url":"https://www.youtube.com/watch?v=dKLX5D4Aq5g", "info":"Cleveland Orchestra, Lorin Maazel Director, Leonard Rose Cello", "start":25, "end":1184}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=cuzsFa5l0d4", "info":"Janine Jansen - Prokofiev Violin Concerto No. 2", "start":60, "end":1692},
+{"url":"https://www.youtube.com/watch?v=uuXKaRFFJIc", "info":"Prokofiev Violin Concerto No. 2 in g minor, Op. 63 (Josefowicz)"}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=QV5r9KG1eyc", "info":"Richard Strauss: Till Eulenspiegel's Merry Pranks, Symphonieorchester des Bayerischen Rundfuck, Lorin Maazel (Conductor)"},
+{"url":"https://www.youtube.com/watch?v=S7O9Oa22nsQ", "info":"Richard Strauss - Till Eulenspiegels lustige Streiche", "start":35, "end":980}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=5PvCGu2Ue0U", "info":"Don Quixote, Op. 35 - Richard Strauss,  Orchestra dell'Accademia Nazionale di Santa Cecilia, G. Pehlivanian (conductor)."},
+{"url":"https://www.youtube.com/watch?v=Bo7KAGhrrIs", "info":"R. Strauss: Don Quijote - Don Quixote op.35 - Pablo Ferrández - Russell Davies - OSG", "start":48, "end":2687}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=rsSMCq7pl_k", "info":"Benjamin Britten: Composer (and conductor), London Symphony Orchestra, Melos Ensemble"},
+{"url":"https://www.youtube.com/watch?v=Fdxk0QOeW6c", "info":"'War Requiem' by Benjamin Britten - NDR Radiophilharmonie – ARTE Concert, Andrew Manze", "start":378, "end":5482}
 ]
 
 ]

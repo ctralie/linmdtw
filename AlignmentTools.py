@@ -153,7 +153,6 @@ def getWarpDictionary(N, plotPaths = False):
     if plotPaths:
         plt.subplot(131)
         plt.title('Polynomial')
-        plt.hold(True)
     for p in range(-4, 6):
         tp = p
         if tp < 0:
@@ -166,7 +165,6 @@ def getWarpDictionary(N, plotPaths = False):
     if plotPaths:
         plt.subplot(132)
         plt.title('Exponential / Logarithmic')
-        plt.hold(True)
     for p in range(2, 6):
         t = np.linspace(1, p**p, N)
         x = np.log(t)
@@ -185,7 +183,6 @@ def getWarpDictionary(N, plotPaths = False):
     if plotPaths:
         plt.subplot(133)
         plt.title('Hyperbolic Tangent')
-        plt.hold(True)
     for p in range(2, 5):
         t = np.linspace(-2, p, N)
         x = np.tanh(t)
@@ -220,7 +217,6 @@ def getWarpingPath(D, k, doPlot = False):
     res = res/np.max(res)
     if doPlot:
         plt.plot(res)
-        plt.hold(True)
         for idx in idxs:
             plt.plot(np.arange(dim), D[idx, :], linestyle='--')
         plt.title('Constructed Warping Path')
@@ -249,69 +245,43 @@ def makePathStrictlyIncrease(path):
             toKeep[i] = 0
     return path[toKeep == 1, :]
 
-
-def rasterizeWarpingPath(P):
-    if np.sum(np.abs(P - np.round(P))) == 0:
-        #No effect if already integer
-        return P
-    P2 = np.round(P)
-    P2 = np.array(P2, dtype = np.int32)
-    ret = []
-    for i in range(P2.shape[0]-1):
-        [i1, j1] = [P2[i, 0], P2[i, 1]]
-        [i2, j2] = [P2[i+1, 0], P2[i+1, 1]]
-        ret.append([i1, j1])
-        for k in range(1, i2-i1):
-            ret.append([i1+k, j1])
-        ret.append([i2, j2])
-    return np.array(ret)
-
-def computeAlignmentError(pP1, pP2, etype = 2, doPlot = False):
+def getAlignmentAreaDist(P1, P2, doPlot = False):
     """
     Compute area-based alignment error.  Assume that the 
     warping paths are on the same grid
-    :param pP1: Mx2 warping path 1
-    :param pP2: Nx2 warping path 2
-    :param etype: Error type.  1 (default) is area ratio.  
-        2 is L1 Hausdorff distance
-    :param doPlot: Whether to plot the results
+    Parameters
+    ----------
+    ndarray(M, 2) pP1
+        First warping path
+    ndarray(N, 2) pP2
+        Second warping path
+    doPlot: boolean
+        Whether to draw a plot showing the enclosed area
+    Returns
+    -------
+    score: float
+        The area score
     """
-    P1 = rasterizeWarpingPath(pP1)
-    P2 = rasterizeWarpingPath(pP2)
-    score = 0
-    if etype == 1:
-        M = np.max(P1[:, 0])
-        N = np.max(P1[:, 1])
-        A1 = np.zeros((M, N))
-        A2 = np.zeros((M, N))
-        for i in range(P1.shape[0]):
-            [ii, jj] = [P1[i, 0], P1[i, 1]]
-            [ii, jj] = [min(ii, M-1), min(jj, N-1)]
-            A1[ii, jj::] = 1.0
-        for i in range(P2.shape[0]):
-            [ii, jj] = [P2[i, 0], P2[i, 1]]
-            [ii, jj] = [min(ii, M-1), min(jj, N-1)]
-            A2[ii, jj::] = 1.0
-        A = np.abs(A1 - A2)
-        score = np.sum(A)/(float(M)*float(N))
-        if doPlot:
-            plt.imshow(A)
-            plt.hold(True)
-            plt.scatter(pP1[:, 1], pP1[:, 0], 5, 'c', edgecolor = 'none')
-            plt.scatter(pP2[:, 1], pP2[:, 0], 5, 'r', edgecolor = 'none')
-            plt.title("Score = %g"%score)
-    else:
-        C = getCSM(np.array(P1, dtype = np.float32), np.array(P2, dtype = np.float32))
-        score = (np.sum(np.min(C, 0)) + np.sum(np.min(C, 1)))/float(P1.shape[0]+P2.shape[0])
-        if doPlot:
-            plt.scatter(P1[:, 1], P1[:, 0], 20, 'c', edgecolor = 'none')
-            plt.scatter(P2[:, 1], P2[:, 0], 20, 'r', edgecolor = 'none')
-            idx = np.argmin(C, 1)
-            for i in range(len(idx)):
-                plt.plot([P1[i, 1], P2[idx[i], 1]], [P1[i, 0], P2[idx[i], 0]], 'k')
-            plt.title("Score = %g"%score)
-    return score
-
+    M = np.max(P1[:, 0])
+    N = np.max(P1[:, 1])
+    A1 = sparse.lil_matrix((M, N))
+    A2 = sparse.lil_matrix((M, N))
+    for i in range(P1.shape[0]):
+        [ii, jj] = [P1[i, 0], P1[i, 1]]
+        [ii, jj] = [min(ii, M-1), min(jj, N-1)]
+        A1[ii, jj::] = 1.0
+    for i in range(P2.shape[0]):
+        [ii, jj] = [P2[i, 0], P2[i, 1]]
+        [ii, jj] = [min(ii, M-1), min(jj, N-1)]
+        A2[ii, jj::] = 1.0
+    A = np.abs(A1 - A2)
+    dist = np.sum(A)/(M + N)
+    if doPlot:
+        plt.imshow(A.toarray())
+        plt.scatter(P1[:, 1], P1[:, 0], 5, 'c', edgecolor = 'none')
+        plt.scatter(P2[:, 1], P2[:, 0], 5, 'r', edgecolor = 'none')
+        plt.title("Dist = %g"%dist)
+    return dist
 
 def getAlignmentCellDists(P1, P2):
     """
@@ -328,22 +298,26 @@ def getAlignmentCellDists(P1, P2):
     dists: ndarray(N)
         L1 distances of each point in the second warping path
         to their closest points in p1,
-    hist: dictionary{dist: count}
-        A histogram of the counts
     """
-    from sklearn.neighbors import KDTree
-    tree = KDTree(P1)
+    from sklearn.neighbors import KDTree, DistanceMetric
+    tree = KDTree(P1, metric="manhattan")
     _, idx = tree.query(P2, k=1)
     idx = idx.flatten()
     P1Close = P1[idx, :]
     dists = np.sum(np.abs(P2-P1Close), 1)
+    return dists
+
+def get_hist(dists):
+    """
+    Return a histogram of distances
+    """
     hist = {}
-    for dist in dists:
-        dist = int(dist)
-        if not dist in hist:
-            hist[dist] = 0
-        hist[dist] += 1
-    return {'dists':dists, 'hist':hist}
+    for d in dists:
+        if d in hist:
+            hist[d] += 1
+        else:
+            hist[d] = 1
+    return hist
 
 def testAlignmentError():
     #Test out alignment errors
@@ -357,10 +331,8 @@ def testAlignmentError():
     P2 = np.zeros((N, 2))
     P2[:, 0] = t*N
     P2[:, 1] = t2*N
-    plt.subplot(121)
-    score = computeAlignmentError(P1, P2, doPlot = True)
-    plt.title("Type 1 Score = %g"%score)
-    plt.subplot(122)
-    score = computeAlignmentError(P1, P2, 2, doPlot = True)
-    plt.title("Type 2 score = %g"%score)
+    score = getAlignmentAreaDist(P1, P2, doPlot = True)
     plt.show()
+
+if __name__ == '__main__':
+    testAlignmentError()

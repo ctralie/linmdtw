@@ -15,7 +15,6 @@ import os
 FFMPEG_BINARY = "ffmpeg"
 
 def load_audio(filename, sr = 44100):
-    print("Doing crema on %s"%filename)
     wavfilename = "%s.wav"%filename
     if os.path.exists(wavfilename):
         os.remove(wavfilename)
@@ -117,3 +116,59 @@ def get_mfcc_mod(x, sr, hop_length, n_mfcc=120, drop=20, finaldim=-1, n_fft = 20
     if finaldim > -1:
         X = skimage.transform.resize(X, (X.shape[0], finaldim), anti_aliasing=True, mode='constant')
     return X
+
+def stretch_audio(x1, x2, sr, path, hop_length, outprefix):
+    """
+    Wrap around pyrubberband to warp the audio
+    Parameters
+    ----------
+    x1: ndarray
+        First audio stream
+    x2: ndarray
+        Second audio stream
+    sr: int
+        Sample rate
+    path: ndarray(M, 2)
+        Warping path, in units of windows
+    hop_length: int
+        The hop length between windows
+    outprefix: string
+        The prefix of the output file to which to save the result
+    """
+    from AlignmentTools import makePathStrictlyIncrease
+    print("Stretching...")
+    #path = makePathStrictlyIncrease(path)
+    path *= hop_length
+    path = [(row[0], row[1]) for row in path]
+    path.append((x1.size, x2.size))
+    x3 = np.zeros((x2.size, 2))
+    x3[:, 1] = x2
+    x1_stretch = pyrb.timemap_stretch(x1, sr, path)
+    x3[:, 0] = x1_stretch
+    wavfilename = "{}.wav".format(outprefix)
+    mp3filename = "{}.mp3".format(outprefix)
+    if os.path.exists(wavfilename):
+        os.remove(wavfilename)
+    if os.path.exists(mp3filename):
+        os.remove(mp3filename)
+    wavfile.write(wavfilename, sr, x3)
+    subprocess.call(["ffmpeg", "-i", wavfilename, mp3filename])
+    os.remove(wavfilename)
+
+
+
+def test_sync():
+    import scipy.io as sio
+    hop_length = 512
+    sr = 22050
+    filename1 = "OrchestralPieces/Long/2_0.mp3"
+    x1, sr = load_audio(filename1, 22050)
+    filename2 = "OrchestralPieces/Long/2_1.mp3"
+    x2, sr = load_audio(filename2, 22050)
+    path = sio.loadmat("OrchestralPieces/Long/2_0.mp3_chroma_path.mat")['path_gpu']
+    hop_length = 512
+    outprefix = "synced"
+    stretch_audio(x1, x2, sr, path, hop_length, outprefix)
+
+if __name__ == '__main__':
+    test_sync()
