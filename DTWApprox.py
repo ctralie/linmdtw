@@ -5,6 +5,7 @@ from scipy import sparse
 import time
 from AlignmentTools import *
 from DTW import *
+import dynseqalign
 
 def fill_block(A, p, radius, val):
     """
@@ -30,8 +31,10 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
     minTSsize = radius + 2
     M = X.shape[0]
     N = Y.shape[0]
+    X = np.ascontiguousarray(X)
+    Y = np.ascontiguousarray(Y)
     if M < radius or N < radius:
-        return {'path':DTW_Backtrace(np.ascontiguousarray(X), np.ascontiguousarray(Y))}
+        return {'path':DTW_Backtrace(X, Y)}
     # Recursive step
     path = fastdtw(X[0::2, :], Y[0::2], radius, debug, level+1, do_plot)['path']
     path = np.array(path)
@@ -40,52 +43,46 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
     S = sparse.lil_matrix((M, N))
     P = sparse.lil_matrix((M, N), dtype=int)
     Occ = sparse.lil_matrix((M, N))
-    # Step 1: Figure out the indices of the occupied cells
+
+    ## Step 1: Figure out the indices of the occupied cells
     for p in path:
         fill_block(Occ, p, radius, 1)
     I, J = Occ.nonzero()
+    # Sort cells in raster order
     idx = np.argsort(J)
     I = I[idx]
     J = J[idx]
     idx = np.argsort(I, kind='stable')
     I = I[idx]
     J = J[idx]
-    if level == 0:
-        print("Elapsed time building sparse structure", time.time()-tic)
 
-    # Step 2: Compute distances at those indices
-    d = np.sqrt(np.sum((X[I, :] - Y[J, :])**2, 1))
-    D = sparse.coo_matrix((d, (I, J)), shape=(M, N))
-    D = D.tocsr()
+    ## Step 2: Find indices of left, up, and diag neighbors.  
+    # All neighbors must be within bounds *and* within sparse structure
+    # Make idx M+1 x N+1 so -1 will wrap around to 0
+    # Make 1-indexed so all valid entries have indices > 0
+    idx = sparse.coo_matrix((np.arange(I.size)+1, (I, J)), shape=(M+1, N+1)).tocsr()
+    # Left neighbors
+    left = np.array(idx[I, J-1], dtype=np.int32).flatten()
+    left[left <= 0] = -1
+    left -= 1
+    # Up neighbors
+    up = np.array(idx[I-1, J], dtype=np.int32).flatten()
+    up[up <= 0] = -1
+    up -= 1
+    # Diag neighbors
+    diag = np.array(idx[I-1, J-1], dtype=np.int32).flatten()
+    diag[diag <= 0] = -1
+    diag -= 1
+
+    ## Step 3: Pass information to cython for dynamic programming steps
+    S = np.zeros(I.size, dtype=np.float32) # Dyn prog matrix
+    P = np.zeros(I.size, dtype=np.int32) # Path pointer matrix
+    dynseqalign.FastDTW_DynProg_Step(X, Y, I, J, left, up, diag, S, P)
+    P = sparse.coo_matrix((P, (I, J)), shape=(M, N)).tocsr()
+    if debug or do_plot:
+        S = sparse.coo_matrix((S, (I, J)), shape=(M, N)).tocsr()
     
-    # Step 3: Do dynamic programming in the chosen band
-    tic = time.time()
-    S[0, 0] = np.sqrt(np.sum((X[0, :] - Y[0, :])**2))
-    for i, j in zip(I, J):
-        if i == 0 and j == 0:
-            continue
-        vals = [np.inf, np.inf, np.inf]
-        # Left
-        if j > 0 and Occ[i, j-1] == 1:
-            vals[0] = S[i, j-1]
-        # Up
-        if i > 0 and Occ[i-1, j] == 1:
-            vals[1] = S[i-1, j]
-        # Diag
-        if i > 0 and j > 0 and Occ[i-1, j-1] == 1:
-            vals[2] = S[i-1, j-1]
-        idx = np.argmin(vals)
-        P[i, j] = idx
-        S[i, j] = vals[idx] + D[i, j]
-    print("Elapsed time dynamic programming level", level, ":", time.time()-tic)
-
-    if do_plot:
-        plt.figure(figsize=(8, 8))
-        plt.imshow(S.toarray())
-        plt.scatter(path[:, 1], path[:, 0], c='C1')
-        plt.title("Level {}".format(level))
-        plt.savefig("%i.png"%level, bbox_inches='tight')
-
+    # Step 4: Do backtracing
     i = M-1
     j = N-1
     path = [[i, j]]
@@ -97,6 +94,15 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
         path.append([i, j])
     path.reverse()
     ret = {'path':path}
+
+    if do_plot:
+        plt.figure(figsize=(8, 8))
+        plt.imshow(S.toarray())
+        path = np.array(path)
+        plt.scatter(path[:, 1], path[:, 0], c='C1')
+        plt.title("Level {}".format(level))
+        plt.savefig("%i.png"%level, bbox_inches='tight')
+
     if debug:
         ret['S'] = S
         ret['P'] = P
