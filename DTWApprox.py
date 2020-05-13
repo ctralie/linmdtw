@@ -28,15 +28,33 @@ def fill_block(A, p, radius, val):
     A[i1:i2+1, j1:j2+1] = val
 
 def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
+    """
+    An implementation of [1]
+    [1] FastDTW: Toward Accurate Dynamic Time Warping in Linear Time and Space
+                Stan Salvador and Philip Chan
+    Parameters
+    ----------
+    X: ndarray(M, d)
+        A d-dimensional Euclidean point cloud with M points
+    Y: ndarray(N, d)
+        A d-dimensional Euclidean point cloud with N points
+    radius: int
+        Radius of the l-infinity box that determines sparsity structure
+        at each level
+    debug: boolean
+        Whether to keep track of debugging information
+    level: int
+        An int for keeping track of the level of recursion
+    """
     minTSsize = radius + 2
     M = X.shape[0]
     N = Y.shape[0]
     X = np.ascontiguousarray(X)
     Y = np.ascontiguousarray(Y)
     if M < radius or N < radius:
-        return {'path':DTW_Backtrace(X, Y)}
+        return DTW_Backtrace(X, Y)
     # Recursive step
-    path = fastdtw(X[0::2, :], Y[0::2], radius, debug, level+1, do_plot)['path']
+    path = fastdtw(X[0::2, :], Y[0::2, :], radius, debug, level+1, do_plot)
     path = np.array(path)
     path *= 2
     tic = time.time()
@@ -93,8 +111,7 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
         j += s[1]
         path.append([i, j])
     path.reverse()
-    ret = {'path':path}
-
+    
     if do_plot:
         plt.figure(figsize=(8, 8))
         plt.imshow(S.toarray())
@@ -104,9 +121,9 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
         plt.savefig("%i.png"%level, bbox_inches='tight')
 
     if debug:
-        ret['S'] = S
-        ret['P'] = P
-    return ret
+        return {'path':path, 'S':S, 'P':P}
+    else:
+        return path
 
 def test_fastdtw():
     from fastdtw import fastdtw as fastdtw2

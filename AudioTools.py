@@ -18,7 +18,7 @@ def load_audio(filename, sr = 44100):
     wavfilename = "%s.wav"%filename
     if os.path.exists(wavfilename):
         os.remove(wavfilename)
-    subprocess.call([FFMPEG_BINARY, "-i", filename, "-ar", "%i"%sr, "-ac", "1", wavfilename])
+    subprocess.call([FFMPEG_BINARY, "-i", filename, "-ar", "%i"%sr, "-ac", "1", wavfilename], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     _, y = wavfile.read(wavfilename)
     y = y/2.0**15
     os.remove(wavfilename)
@@ -168,7 +168,7 @@ def test_sync():
     path = sio.loadmat("OrchestralPieces/Long/2_0.mp3_chroma_path.mat")['path_gpu']
     hop_length = 512
     outprefix = "synced"
-    stretch_audio(x1, x2, sr, path, hop_length, outprefix)
+    stretch_audio(x1, x2, sr, path, hop_length, outprefix, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 if __name__ == '__main__':
     test_sync()

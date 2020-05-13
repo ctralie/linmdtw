@@ -1,4 +1,5 @@
 from DTW import *
+from DTWApprox import *
 from DTWGPU import *
 from AlignmentTools import *
 from AudioTools import *
@@ -12,7 +13,6 @@ import os
 import glob
 import youtube_dl
 from scipy.spatial.distance import euclidean
-from fastdtw import fastdtw
 
 initParallelAlgorithms()
 
@@ -26,7 +26,7 @@ def download_corpus(foldername):
         for j, piece in enumerate(pair):
             path = "{}/{}_{}.mp3".format(foldername, i, j)
             if os.path.exists(path):
-                print("Skipping ", path)
+                print("Already downloaded ", path)
                 continue
             url = piece['url']
 
@@ -65,15 +65,16 @@ def download_corpus(foldername):
                 subprocess.call(["mv", "temp.mp3", path])
     
 
-def align_pieces(filename1, filename2, sr, hop_length, do_mfcc, compare_cpu, do_stretch=False):
+def align_pieces(filename1, filename2, sr, hop_length, do_mfcc, compare_cpu, do_stretch=False, delta=30, do_stretch_approx=False):
     prefix = "mfcc"
     if not do_mfcc:
         prefix = "chroma"
     pathfilename = "{}_{}_path.mat".format(filename1, prefix)
-    if os.path.exists(pathfilename):
-        print("Skipping", filename1, filename2)
+    approx_pathfilename = "{}_{}_approx_path.mat".format(filename1, prefix)
+    if os.path.exists(pathfilename) and os.path.exists(approx_pathfilename):
+        print("Already computed all alignments on ", filename1, filename2)
         return
-    
+
     x1, sr = load_audio(filename1, sr)
     x2, sr = load_audio(filename2, sr)
     if do_mfcc:
@@ -86,68 +87,55 @@ def align_pieces(filename1, filename2, sr, hop_length, do_mfcc, compare_cpu, do_
     X1 = np.ascontiguousarray(X1, dtype=np.float32)
     X2 = np.ascontiguousarray(X2, dtype=np.float32)
 
-    tic = time.time()
-    metadata = {'totalCells':0, 'M':X1.shape[0], 'N':X2.shape[0], 'timeStart':tic}
-    print("Starting GPU Alignment...")
-    path_gpu = DTWDiag_Backtrace(X1, X2, DTWDiag_fn=DTWDiag_GPU, metadata=metadata)
-    metadata['time_gpu'] = time.time() - metadata['timeStart']
-    print("Time GPU", metadata['time_gpu'])
-    path_gpu = np.array(path_gpu)
-    paths = {"path_gpu":path_gpu}
-    if compare_cpu:
+    if os.path.exists(pathfilename):
+        print("Already computed full alignments on ", filename1, filename2)
+    else:
         tic = time.time()
-        path_cpu = DTW_Backtrace(X1, X2)
-        elapsed = time.time() - tic
-        print("Time CPU", elapsed)
-        metadata["time_cpu"] = elapsed
-        path_cpu = np.array(path_cpu)
-        paths["path_cpu"] = path_cpu
+        metadata = {'totalCells':0, 'M':X1.shape[0], 'N':X2.shape[0], 'timeStart':tic}
+        print("Starting GPU Alignment...")
+        path_gpu = DTWDiag_Backtrace(X1, X2, DTWDiag_fn=DTWDiag_GPU, metadata=metadata)
+        metadata['time_gpu'] = time.time() - metadata['timeStart']
+        print("Time GPU", metadata['time_gpu'])
+        path_gpu = np.array(path_gpu)
+        paths = {"path_gpu":path_gpu}
+        if compare_cpu:
+            tic = time.time()
+            print("Doing CPU alignment...")
+            path_cpu = DTW_Backtrace(X1, X2)
+            elapsed = time.time() - tic
+            print("Time CPU", elapsed)
+            metadata["time_cpu"] = elapsed
+            path_cpu = np.array(path_cpu)
+            paths["path_cpu"] = path_cpu
 
-    for f in ['totalCells', 'M', 'N']:
-        metadata[f] = int(metadata[f])
-    for f in ['XGPU', 'YGPU', 'timeStart']:
-        if f in metadata:
-            del metadata[f]
-    json.dump(metadata, open("{}_{}_stats.json".format(filename1, prefix), "w"))
-    path_gpu_arr = path_gpu.copy()
-    sio.savemat(pathfilename, paths)
+        for f in ['totalCells', 'M', 'N']:
+            metadata[f] = int(metadata[f])
+        for f in ['XGPU', 'YGPU', 'timeStart']:
+            if f in metadata:
+                del metadata[f]
+        json.dump(metadata, open("{}_{}_stats.json".format(filename1, prefix), "w"))
+        path_gpu_arr = path_gpu.copy()
+        sio.savemat(pathfilename, paths)
 
-    if do_stretch:
-        stretch_audio(x1, x2, sr, path_gpu, hop_length, "{}_{}_sync".format(filename1, prefix))
+        if do_stretch:
+            print("Stretching...")
+            stretch_audio(x1, x2, sr, path_gpu, hop_length, "{}_{}_sync".format(filename1, prefix))
+            print("Finished stretching")
 
-
-def align_pieces_approx(filename1, filename2, sr, hop_length, do_mfcc, do_stretch=False, delta=30):
-    """
-    delta: int
-        Expansion size for tubular constraint region in FastDTW (30 was
-        the value used in the Praetzlich paper)
-    """
-    prefix = "mfcc"
-    if not do_mfcc:
-        prefix = "chroma"
-    pathfilename = "{}_{}_approx_path.mat".format(filename1, prefix)
-    if os.path.exists(pathfilename):
-        print("Skipping", filename1, filename2)
-        return
-    
-    x1, sr = load_audio(filename1, sr)
-    x2, sr = load_audio(filename2, sr)
-    if do_mfcc:
-        X1 = get_mfcc_mod(x1, sr, hop_length)
-        X2 = get_mfcc_mod(x2, sr, hop_length)
+    # Do approximate alignments
+    if os.path.exists(approx_pathfilename):
+        print("Already computed approximate alignments for ", filename1, filename2)
     else:
-        X1 = get_mixed_DLNC0_CENS(x1, sr, hop_length)
-        X2 = get_mixed_DLNC0_CENS(x2, sr, hop_length)
+        print("Doing fastdtw...")
+        tic = time.time()
+        path_fastdtw = fastdtw(X1, X2, radius = delta)
+        elapsed = time.time()-tic
+        print("Elapsed time fastdtw", elapsed)
+        path_fastdtw = np.array([[p[0], p[1]] for p in path_fastdtw])
+        sio.savemat(approx_pathfilename, {"path_fastdtw":path_fastdtw, "elapsed":elapsed})
+        if do_stretch_approx:
+            stretch_audio(x1, x2, sr, path_fastdtw, hop_length, "{}_{}_fastdtw_sync".format(filename1, prefix))
 
-    X1 = np.ascontiguousarray(X1, dtype=np.float32)
-    X2 = np.ascontiguousarray(X2, dtype=np.float32)
-
-    _, path_fastdtw = fastdtw(X1, X2, radius = delta, dist=euclidean)
-    path_fastdtw = np.array([[p[0], p[1]] for p in path_fastdtw])
-    sio.savemat(pathfilename, {"path_fastdtw":path_fastdtw})
-
-    if do_stretch:
-        stretch_audio(x1, x2, sr, path_fastdtw, hop_length, "{}_{}_fastdtw_sync".format(filename1, prefix))
 
 def align_corpus(foldername, compare_cpu, do_stretch):
     hop_length = 512
@@ -161,7 +149,6 @@ def align_corpus(foldername, compare_cpu, do_stretch):
                 filename2 = "{}/{}_1.mp3".format(foldername, i)
                 print("Doing ", filename1, filename2)
                 align_pieces(filename1, filename2, sr, hop_length, do_mfcc=do_mfcc, compare_cpu=compare_cpu, do_stretch=do_stretch)
-                #align_pieces_approx(filename1, filename2, sr, hop_length, do_mfcc=do_mfcc, do_stretch=False)
             except:
                 print("ERROR")
 
