@@ -93,7 +93,7 @@
 ],
 
 [
-{"url":"https://www.youtube.com/watch?v=sLjlqvE0Z1I", "info":"0:16 / 9:34 Mozart Violin Concerto No. 4 in D Major K.218 - 1st Movement - Allegro, Henryk Szeryng New Philharmonia Orchestra w/Sir Alexander Gibson"},
+{"url":"https://www.youtube.com/watch?v=sLjlqvE0Z1I", "info":"Mozart Violin Concerto No. 4 in D Major K.218 - 1st Movement - Allegro, Henryk Szeryng New Philharmonia Orchestra w/Sir Alexander Gibson"},
 {"url":"https://www.youtube.com/watch?v=hYPgASaWidE", "info":"Mozart: Violin Concerto No. 4 in D Major, K. 218 - 1. Allegro - Cadenza: Itzhak Perlman"}
 ],
 
@@ -178,6 +178,81 @@
 [
 {"url":"https://www.youtube.com/watch?v=Y1E6FBi-AJw", "info":"Bernstein - Academic Festival Overture (Brahms)"},
 {"url":"https://www.youtube.com/watch?v=R5pzr5655yw", "info":"Brahms - Academic Festival Overture, Op 80 - Järvi"}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=8yF1QT60ibk", "info":"Barber Overture to The School for Scandal, Yoel Levi & Atlanta Symphony Orchestra"},
+{"url":"https://www.youtube.com/watch?v=v48hRxjvWmM", "info":"Barber: Ouverture to The School for Scandal, hr-Sinfonieorchester ∙ Andrés Orozco-Estrada", "start":17, "end":559}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=Vvn2oGyji8s", "info":"Beethoven Coriolan Overture, Bernstein, Wiener Philarmonkier", "end":545},
+{"url":"https://www.youtube.com/watch?v=lHM8uekMxls", "info":"Beethoven Coriolan Overture, Claudio Abbado, Vienna Philharmonic Orchestra"}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=9GnJBLwOjFo", "info":"Aaron Copland: Concerto for Clarinet and String Orchestra, Martin Fröst, clarinet Norwegian Chamber Orchestra", "end":926},
+{"url":"https://www.youtube.com/watch?v=PmMFL1zZ-tU", "info":"Aaron Copland's 'Concerto for Clarinet and String Orchestra (with Harp and Piano)' performed by Benny Goodman (clarinet) and the Columbia Symphony Orchestra, conducted by Aaron Copland."}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=mC8xYHGnkuw", "info":"Gershwin: Cuban Overture · Chicago Symphony Orchestra · James Levine"},
+{"url":"https://www.youtube.com/watch?v=kYr17m7mnM8", "info":"Joshua Dos Santos. Gershwin, Cuban Overture", "end":619}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=pkxXFLRmqvw", "info":"Ludwig Van Beethoven - Egmont Overture, Claudio Abbado: Berlin Philharmonic Orchestra."},
+{"url":"https://www.youtube.com/watch?v=2HhbZmgvaKs", "info":"Beethoven: Egmont Overture / Ozawa Saito Kinen Orchestra", "start":45, "end":548}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=xyCYvoOEBbw", "info":"Dvořák - Symphony No. 9 in E Minor 'From the New World' - IV. Allegro con fuoco (Karajan)"},
+{"url":"https://www.youtube.com/watch?v=oLWpgWuUaU4", "info":"vořák - Symphony No.9 in E minor, Op.95; B 178, 'From the New World', Berliner Philharmoniker (orchestra), Ferenc Fricsay (conductor)", "start":1936}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=9cmRtYeh47A", "info":"Janet Baker: Phaedra by Britten, English Chamber Orchestra Conducted by Steuart Bedford"},
+{"url":"https://www.youtube.com/watch?v=Yz3NvWrGcew", "info":"Lorraine Hunt Lieberson sings 'Phaedra' by Britten"}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=SS8ey4g6jYo", "info":"Richard Strauss: Horn Concerto No. 1 - Baborak / Olivieri-Munroe / National Philharmonic of Russia", "start":24, "end":979},
+{"url":"https://www.youtube.com/watch?v=SWu27MIGuMw", "info":"David Cooper, Strauss Horn Concerto No 1 in E flat", "end":870}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=Qj-98yBfEI0", "info":"Copland conducts El Salon Mexico, New York Philharmonic", "start":97, "end":742},
+{"url":"https://www.youtube.com/watch?v=pouIRuxHS_o", "info":"Copland: El salon Mexico / Zinman Baltimore Symphony Orchestra", "start":26, "end":724}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=a0n99OopdpA", "info":"Bach: Keyboard Concerto No. 5 in F Minor, BWV 1056 [Glenn Gould]"},
+{"url":"https://www.youtube.com/watch?v=cvOGF5QqzSY", "info":"J. S. Bach - Piano Concerto no. 5 in f- minor, BWV 1056 - Sven Brajković, piano", "end":784}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=YWlsLJlpyPU", "info":"Vivaldi, Bassoon Concerto in E minor, RV 484, Concertus Hungarieus, Valeri Polyansky conductor, Valeri Popov bassoon"},
+{"url":"https://www.youtube.com/watch?v=xidC7TZRxkA", "info":"Vivaldi, Bassoon Concerto in E minor, RV 484, Klaudia Abramczuk - bassoon, Marta Kluczyńska - conductor", "start":50, "end":705}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=nioKJNp8ADE", "info":"Schubert, Trio No. 2, Op. 100, Andante con moto | Ambroise Aubrun, Maëlle Vilbert, Julien Hanck"},
+{"url":"https://www.youtube.com/watch?v=e52IMaE-3As", "info":"Schubert, Trio op. 100 - Andante con moto,Par le Trio Wanderer"} 
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=_JpXlliAn2I", "info":"Schubert Ständchen : Camille Thomas and Beatrice Berrut",  "start":8, "end":228},
+{"url":"https://www.youtube.com/watch?v=I6Njg1LFxFk", "info":"Schubert Ständchen, Anne Gastinel, cello, Claire Désert, piano"}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=PHRKUJNj3tU", "info":"Ludwig van Beethoven: Leonore Overture No. 1, op. 138, Claudio Abbado, Vienna Philharmonic Orchestra"},
+{"url":"https://www.youtube.com/watch?v=pPJvApIUCw0", "info":"Ludwig van Beethoven: Leonore Overture No. 1, op. 138, Concertgebouw Orchestra of Amsterdam, Eugen Jochum", "start":8}
+],
+
+[
+{"url":"https://www.youtube.com/watch?v=Nzo3atXtm54", "info":"Johannes Brahms -- Hungarian Dance No.5 - Hungarian Symphony Orchestra Budapest", "start":16, "end":209},
+{"url":"https://www.youtube.com/watch?v=-HNmVe0Mmek", "info":"Johannes Brahms -- Hungarian Dance No.5, Victoria Day Celebration"}
 ]
 
 ]

@@ -5,6 +5,7 @@ from scipy import sparse
 import time
 from AlignmentTools import *
 from DTW import *
+from DTWGPU import *
 import dynseqalign
 
 def fill_block(A, p, radius, val):
@@ -55,6 +56,8 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
         return DTW_Backtrace(X, Y)
     # Recursive step
     path = fastdtw(X[0::2, :], Y[0::2, :], radius, debug, level+1, do_plot)
+    if type(path) is dict:
+        path = path['path']
     path = np.array(path)
     path *= 2
     tic = time.time()
@@ -150,5 +153,114 @@ def test_fastdtw():
     plt.scatter(path2[:, 1], path2[:, 0], marker='x')
     plt.show()
 
+def mrmsdtw(X, Y, tau, debug=False, level=0):
+    """
+    An implementation of the approximate, memory-restricted
+    multiscale DTW technique from [2]
+    [2] "Memory-Restricted Multiscale Dynamic Time Warping"
+    Thomas Praetzlich, Jonathan Driedger and Meinard Mueller
+    Parameters
+    ----------
+    X: ndarray(M, d)
+        A d-dimensional Euclidean point cloud with M points
+    Y: ndarray(N, d)
+        A d-dimensional Euclidean point cloud with N points
+    tau: int
+        The max amount of cells to be in memory at any given
+        time
+    debug: boolean
+        Whether to keep track of debugging information
+    level: int
+        An int for keeping track of the level of recursion
+    """
+    X = np.ascontiguousarray(X)
+    Y = np.ascontiguousarray(Y)
+    M = X.shape[0]
+    N = Y.shape[0]
+    if M*N < tau:
+        # If the matrix is already within the memory bounds, simply
+        # return DTW
+        return DTW_Backtrace(X, Y)
+
+    ## Step 1: Perform DTW at the coarse level
+    # Figure out the subsampling factor for the
+    # coarse alignment based on memory requirements
+    d = int(np.ceil(np.sqrt(M*N/tau)))
+    print("d = ", d)
+    anchors = DTW_Backtrace(np.ascontiguousarray(X[0::d, :]), 
+                  np.ascontiguousarray(Y[0::d, :]))
+    anchors = [[0, 0]] + anchors
+    anchors = (np.array(anchors)*d).tolist()
+    if anchors[-1][0] < M-1 or anchors[-1][1] < N-1:
+        anchors.append([M-1, N-1])
+    
+    ## Step 2: Subdivide anchors if necessary to keep
+    # within memory bounds
+    idx = 0
+    while idx < len(anchors)-1:
+        a1 = anchors[idx]
+        a2 = anchors[idx+1]
+        m = a2[0]-a1[0]+1
+        n = a2[1]-a1[1]+1
+        if m*n > tau:
+            # Subdivide cell
+            i = int((a1[0]+a2[0])/2)
+            j = int((a1[1]+a2[1])/2)
+            anchors = anchors[0:idx] + [[i, j]] + anchors[idx::]
+        else:
+            # Move on
+            idx += 1
+    
+    ## Step 3: Do alignments in each block
+    path = []
+    startidx = [] # Keep track of index where each block starts
+    for i in range(len(anchors)-1):
+        a1 = anchors[i]
+        a2 = anchors[i+1]
+        box = [a1[0], a2[0], a1[1], a2[1]]
+        pathi = DTWDiag_Backtrace(X, Y, box = box)
+        startidx.append(len(path))
+        path += pathi[0:-1]
+    path += [[M-1, N-1]]
+    
+    ## Step 4: Come up with next set of anchor points
+    # First choose them to be at the center of each block
+    anchors = []
+    for idx in range(len(startidx)):
+        p1 = path[startidx[idx]]
+        p2 = path[startidx[idx+1]]
+        i = int((p1[0]+p2[0])/2)
+        j = int((p1[1]+p2[1])/2)
+        anchors.append([i, j])
+    # Split anchor positions if the blocks are too big
+    ## TODO: Finish this
+    finalpath = path[0:]
+    idx = 0
+    while idx < len(anchors)-1:
+        a1 = anchors[idx]
+        a2 = anchors[idx+1]
+        m = a2[0]-a1[0]+1
+        n = a2[1]-a1[1]+1
+        if m*n > tau:
+            pass
+
+    return path
+
+def test_mrmsdtw():
+    from Tests import get_figure8s
+    X, Y = get_figure8s(800, 600)
+    tic = time.time()
+    path = mrmsdtw(X, Y, tau=10**4)
+    print("Elapsed time", time.time()-tic)
+
+    path2 = np.array(fastdtw(X, Y, 30))
+    path = np.array(path)
+    plt.scatter(path[:, 1], path[:, 0])
+    plt.scatter(path2[:, 1], path2[:, 0])
+    plt.legend(["mrmsdtw", "fastdtw"])
+    plt.show()
+
+
 if __name__ == '__main__':
-    test_fastdtw()
+    #test_fastdtw()
+    test_mrmsdtw()

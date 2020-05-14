@@ -88,7 +88,7 @@ def align_pieces(filename1, filename2, sr, hop_length, do_mfcc, compare_cpu, do_
     X2 = np.ascontiguousarray(X2, dtype=np.float32)
 
     if os.path.exists(pathfilename):
-        print("Already computed full alignments on ", filename1, filename2)
+        print("Already computed full", prefix, "alignments on", filename1, filename2)
     else:
         tic = time.time()
         metadata = {'totalCells':0, 'M':X1.shape[0], 'N':X2.shape[0], 'timeStart':tic}
@@ -124,7 +124,7 @@ def align_pieces(filename1, filename2, sr, hop_length, do_mfcc, compare_cpu, do_
 
     # Do approximate alignments
     if os.path.exists(approx_pathfilename):
-        print("Already computed approximate alignments for ", filename1, filename2)
+        print("Already computed approximate", prefix, "alignments for", filename1, filename2)
     else:
         print("Doing fastdtw...")
         tic = time.time()
@@ -154,9 +154,9 @@ def align_corpus(foldername, compare_cpu, do_stretch):
 
 if __name__ == '__main__':
     download_corpus("OrchestralPieces/Short")
-    align_corpus("OrchestralPieces/Short", compare_cpu=True, do_stretch=True)
+    align_corpus("OrchestralPieces/Short", compare_cpu=True, do_stretch=False)
     download_corpus("OrchestralPieces/Long")
-    align_corpus("OrchestralPieces/Long", compare_cpu=False, do_stretch=True)
+    align_corpus("OrchestralPieces/Long", compare_cpu=False, do_stretch=False)
 
 if __name__ == '__main__2':
     hop_length = 512

@@ -124,7 +124,8 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fal
     for k in range(M+N-1):
         dynseqalign.DTW_Diag_Step(d0, d1, d2, csm0, csm1, csm2, X, Y, diagLen, box, int(reverse), k, int(debug), U, L, UL, S)
         csm2len = get_diag_len(box, k)
-        update_alignment_metadata(metadata, csm2len)
+        if metadata:
+            update_alignment_metadata(metadata, csm2len)
         if k == k_save:
             res['d0'] = d0.copy()
             res['csm0'] = csm0.copy()

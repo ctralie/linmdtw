@@ -49,6 +49,8 @@ def DTWDiag_GPU(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug
         A dictionary for storing information about the computation
     """
     assert(X.shape[1] == Y.shape[1])
+    if not metadata:
+        metadata = {}
     if not 'XGPU' in metadata:
         metadata['XGPU'] = gpuarray.to_gpu(np.array(X, dtype=np.float32))
     XGPU = metadata['XGPU']
