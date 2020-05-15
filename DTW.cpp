@@ -5,8 +5,8 @@
 #define UP 1
 #define DIAG 2
 
-float c_dtw(float* X, float* Y, int* P, int M, int N, int d, int debug, float* U, float* L, float* UL, float* S) {
-    float dist;
+double c_dtw(double* X, double* Y, int* P, int M, int N, int d, int debug, double* U, double* L, double* UL, double* S) {
+    double dist;
     if (debug == 1) {
         for (int i = 0; i < M; i++) {
             for (int j = 0; j < N; j++) {
@@ -27,7 +27,7 @@ float c_dtw(float* X, float* Y, int* P, int M, int N, int d, int debug, float* U
             dist = sqrt(dist);
 
             // Step 2: Do dynamic progamming step
-            float score = -1;
+            double score = -1;
             if (i == 0 && j == 0) {
                 score = 0;
                 if (debug == 1) {
@@ -38,17 +38,17 @@ float c_dtw(float* X, float* Y, int* P, int M, int N, int d, int debug, float* U
             }
             else {
                 // Left
-                float left = -1;
+                double left = -1;
                 if (j > 0) {
                     left = S[i*N + (j-1)];
                 }
                 // Up
-                float up = -1;
+                double up = -1;
                 if (i > 0) {
                     up = S[(i-1)*N+j];
                 }
                 // Diag
-                float diag = -1;
+                double diag = -1;
                 if (i > 0 && j > 0) {
                     diag = S[(i-1)*N + (j-1)];
                 }
@@ -61,7 +61,7 @@ float c_dtw(float* X, float* Y, int* P, int M, int N, int d, int debug, float* U
                     score = up;
                     P[i*N + j] = UP;
                 }
-                if (diag > -1 && (diag <= score || score == -1)) {
+                if (diag > -1 && (diag < score || score == -1)) {
                     score = diag;
                     P[i*N + j] = DIAG;
                 }

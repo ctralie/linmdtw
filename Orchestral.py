@@ -137,6 +137,39 @@ def align_pieces(filename1, filename2, sr, hop_length, do_mfcc, compare_cpu, do_
             stretch_audio(x1, x2, sr, path_fastdtw, hop_length, "{}_{}_fastdtw_sync".format(filename1, prefix))
 
 
+
+def align_pieces_cpu(filename1, filename2, sr, hop_length, do_mfcc):
+    prefix = "mfcc"
+    if not do_mfcc:
+        prefix = "chroma"
+    pathfilename = "{}_{}_cpuleft_path.mat".format(filename1, prefix)
+    if os.path.exists(pathfilename):
+        print("Already computed all alignments on ", filename1, filename2)
+        return
+
+    x1, sr = load_audio(filename1, sr)
+    x2, sr = load_audio(filename2, sr)
+    if do_mfcc:
+        X1 = get_mfcc_mod(x1, sr, hop_length)
+        X2 = get_mfcc_mod(x2, sr, hop_length)
+    else:
+        X1 = get_mixed_DLNC0_CENS(x1, sr, hop_length)
+        X2 = get_mixed_DLNC0_CENS(x2, sr, hop_length)
+
+    X1 = np.ascontiguousarray(X1)
+    X2 = np.ascontiguousarray(X2)
+    print(X1.dtype)
+
+    tic = time.time()
+    print("Doing CPU alignment...")
+    path_cpu = DTW_Backtrace(X1, X2)
+    elapsed = time.time() - tic
+    print("Time CPU", elapsed)
+    path_cpu = np.array(path_cpu)
+    paths = {"path_cpu":path_cpu}
+    sio.savemat(pathfilename, paths)
+
+
 def align_corpus(foldername, compare_cpu, do_stretch):
     hop_length = 512
     sr = 22050
@@ -144,19 +177,16 @@ def align_corpus(foldername, compare_cpu, do_stretch):
     pieces = json.load(open(infofile, "r"))
     for do_mfcc in [False, True]:
         for i, pair in enumerate(pieces):
-            try:
-                filename1 = "{}/{}_0.mp3".format(foldername, i)
-                filename2 = "{}/{}_1.mp3".format(foldername, i)
-                print("Doing ", filename1, filename2)
-                align_pieces(filename1, filename2, sr, hop_length, do_mfcc=do_mfcc, compare_cpu=compare_cpu, do_stretch=do_stretch)
-            except:
-                print("ERROR")
+            filename1 = "{}/{}_0.mp3".format(foldername, i)
+            filename2 = "{}/{}_1.mp3".format(foldername, i)
+            print("Doing ", filename1, filename2)
+            align_pieces_cpu(filename1, filename2, sr, hop_length, do_mfcc=do_mfcc)
 
 if __name__ == '__main__':
-    download_corpus("OrchestralPieces/Short")
+    #download_corpus("OrchestralPieces/Short")
     align_corpus("OrchestralPieces/Short", compare_cpu=True, do_stretch=False)
-    download_corpus("OrchestralPieces/Long")
-    align_corpus("OrchestralPieces/Long", compare_cpu=False, do_stretch=False)
+    #download_corpus("OrchestralPieces/Long")
+    #align_corpus("OrchestralPieces/Long", compare_cpu=False, do_stretch=False)
 
 if __name__ == '__main__2':
     hop_length = 512

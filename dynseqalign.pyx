@@ -7,23 +7,23 @@ import cython
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def DTW(numpy.ndarray[float,ndim=2,mode="c"] X not None, numpy.ndarray[float,ndim=2,mode="c"] Y not None, int debug):
+def DTW(numpy.ndarray[double,ndim=2,mode="c"] X not None, numpy.ndarray[double,ndim=2,mode="c"] Y not None, int debug):
     cdef int M = X.shape[0]
     cdef int N = Y.shape[0]
     cdef int d = Y.shape[1]
     cdef int[:, :] P = numpy.zeros((M, N), dtype='int32')
-    cdef float[:, :,] U 
-    cdef float[:, :,] L
-    cdef float[:, :,] UL
+    cdef double[:, :,] U 
+    cdef double[:, :,] L
+    cdef double[:, :,] UL
     if debug == 1:
-        U = numpy.zeros((M, N), dtype='float32')
-        L = numpy.zeros((M, N), dtype='float32')
-        UL = numpy.zeros((M, N), dtype='float32')
+        U = numpy.zeros((M, N), dtype='float64')
+        L = numpy.zeros((M, N), dtype='float64')
+        UL = numpy.zeros((M, N), dtype='float64')
     else:
-        U = numpy.zeros((1, 1), dtype='float32')
-        L = numpy.zeros((1, 1), dtype='float32')
-        UL = numpy.zeros((1, 1), dtype='float32')
-    cdef float[:, :,] S = numpy.zeros((M, N), dtype='float32')
+        U = numpy.zeros((1, 1), dtype='float64')
+        L = numpy.zeros((1, 1), dtype='float64')
+        UL = numpy.zeros((1, 1), dtype='float64')
+    cdef double[:, :,] S = numpy.zeros((M, N), dtype='float64')
     cost = dynseqalign.c_dtw(&X[0,0], &Y[0, 0], &P[0,0], M, N, d, debug, &U[0, 0], &L[0, 0], &UL[0, 0], &S[0, 0])
     ret = {'cost':cost, 'P':P}
     if debug == 1:

@@ -18,6 +18,8 @@ def DTW(X, Y, debug=False):
         Whether to keep track of debugging information
     """
     import dynseqalign
+    X = np.array(X, dtype=np.float64)
+    Y = np.array(Y, dtype=np.float64)
     return dynseqalign.DTW(X, Y, int(debug))
 
 def DTW_Backtrace(X, Y, debug=False):
