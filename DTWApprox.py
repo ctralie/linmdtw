@@ -170,7 +170,7 @@ def get_box_area(a1, a2):
     n = a2[1]-a1[1]+1
     return m*n
 
-def mrmsdtw(X, Y, tau, debug=False, level=0):
+def mrmsdtw(X, Y, tau, debug=False, refine = True):
     """
     An implementation of the approximate, memory-restricted
     multiscale DTW technique from [2]
@@ -187,8 +187,8 @@ def mrmsdtw(X, Y, tau, debug=False, level=0):
         time
     debug: boolean
         Whether to keep track of debugging information
-    level: int
-        An int for keeping track of the level of recursion
+    refine: boolean
+        Whether to do refinement with the "white anchors"
     """
     X = np.ascontiguousarray(X)
     Y = np.ascontiguousarray(Y)
@@ -238,32 +238,63 @@ def mrmsdtw(X, Y, tau, debug=False, level=0):
         banchors_idx.append(len(path)-1)
         path += pathi[0:-1]
     path += [[M-1, N-1]]
+    if not refine:
+        return path
     
     ## Step 4: Come up with the set of "white anchors"
     # First choose them to be at the center of each block
     wanchors_idx = []
     for idx in range(len(banchors_idx)-1):
-        wanchors_idx.append(int(0.5*(wanchors_idx[idx]+wanchors_idx[idx+1])))
+        wanchors_idx.append([int(0.5*(banchors_idx[idx]+banchors_idx[idx+1]))]*2)
     # Split anchor positions if the blocks are too big
     for i in range(len(wanchors_idx)-1):
-        a1 = path[wanchors_idx[i]]
-        a2 = path[wanchors_idx[i+1]]
+        a1 = path[wanchors_idx[i][-1]]
+        a2 = path[wanchors_idx[i+1][0]]
+        while get_box_area(a1, a2) > tau:
+            # Move the anchors towards each other
+            wanchors_idx[i][-1] += 1
+            wanchors_idx[i+1][0] -= 1
+            a1 = path[wanchors_idx[i][-1]]
+            a2 = path[wanchors_idx[i+1][0]]
     
-
-    return path
+    ## Step 5: Do DTW between white anchors and splice path together
+    pathret = path[0:wanchors_idx[0][0]+1]
+    for i in range(len(wanchors_idx)-1):
+        a1 = path[wanchors_idx[i][-1]]
+        a2 = path[wanchors_idx[i+1][0]]
+        box = [a1[0], a2[0], a1[1], a2[1]]
+        pathi = DTWDiag_Backtrace(X, Y, box = box)
+        pathret += pathi[0:-1]
+        # If there's a gap in between this box and 
+        # the next one, use the path from before
+        i1 = wanchors_idx[i+1][0]
+        i2 = wanchors_idx[i+1][1]
+        if i1 != i2:
+            pathret += path[i1:i2]
+    i1 = wanchors_idx[-1][-1]
+    pathret += path[i1::]
+    return pathret
 
 def test_mrmsdtw():
     from Tests import get_figure8s
     X, Y = get_figure8s(800, 600)
+    D = getCSM(X, Y)
     tic = time.time()
-    path = mrmsdtw(X, Y, tau=10**4)
+    path11 = mrmsdtw(X, Y, tau=10**5)
+    path12 = mrmsdtw(X, Y, tau=10**5, refine=False)
     print("Elapsed time", time.time()-tic)
 
-    path2 = np.array(fastdtw(X, Y, 30))
-    path = np.array(path)
-    plt.scatter(path[:, 1], path[:, 0])
-    plt.scatter(path2[:, 1], path2[:, 0])
-    plt.legend(["mrmsdtw", "fastdtw"])
+    path2 = np.array(fastdtw(X, Y, 30), dtype=int)
+    path11 = np.array(path11, dtype=int)
+    path12 = np.array(path12, dtype=int)
+    plt.plot(np.sum(path11[1::, :] - path11[0:-1, :], axis=1))
+    plt.show()
+
+    plt.scatter(path11[:, 1], path11[:, 0])
+    plt.scatter(path12[:, 1], path12[:, 0])
+    #plt.scatter(path2[:, 1], path2[:, 0])
+    plt.legend(["mrmsdtw, tau=10^5, cost=%.3g"%np.sum(D[path11[:, 0], path11[:, 1]]), 
+                "mrmsdtw, tau=10^5, not refined, cost=%.3g"%np.sum(D[path12[:, 0], path12[:, 1]])])#, "fastdtw"])
     plt.show()
 
 
