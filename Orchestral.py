@@ -142,7 +142,7 @@ def align_pieces_cpu(filename1, filename2, sr, hop_length, do_mfcc):
     prefix = "mfcc"
     if not do_mfcc:
         prefix = "chroma"
-    pathfilename = "{}_{}_cpuleft_path.mat".format(filename1, prefix)
+    pathfilename = "{}_{}_cpudiag_path.mat".format(filename1, prefix)
     if os.path.exists(pathfilename):
         print("Already computed all alignments on ", filename1, filename2)
         return

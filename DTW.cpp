@@ -53,17 +53,17 @@ double c_dtw(double* X, double* Y, int* P, int M, int N, int d, int debug, doubl
                     diag = S[(i-1)*N + (j-1)];
                 }
 
-                if (left > -1) {
-                    score = left;
-                    P[i*N + j] = LEFT;
+                if (diag > -1) {
+                    score = diag;
+                    P[i*N + j] = diag;
                 }
                 if (up > -1 && (up < score || score == -1)) {
                     score = up;
                     P[i*N + j] = UP;
                 }
-                if (diag > -1 && (diag < score || score == -1)) {
-                    score = diag;
-                    P[i*N + j] = DIAG;
+                if (left > -1 && (left < score || score == -1)) {
+                    score = left;
+                    P[i*N + j] = LEFT;
                 }
                 if (debug == 1) {
                     U[i*N + j] = up;
