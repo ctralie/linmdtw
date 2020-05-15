@@ -132,9 +132,20 @@ def align_pieces(filename1, filename2, sr, hop_length, do_mfcc, compare_cpu, do_
         elapsed = time.time()-tic
         print("Elapsed time fastdtw", elapsed)
         path_fastdtw = np.array([[p[0], p[1]] for p in path_fastdtw])
-        sio.savemat(approx_pathfilename, {"path_fastdtw":path_fastdtw, "elapsed":elapsed})
+        res = {"path_fastdtw":path_fastdtw, "elapsed_fastdtw":elapsed}
         if do_stretch_approx:
             stretch_audio(x1, x2, sr, path_fastdtw, hop_length, "{}_{}_fastdtw_sync".format(filename1, prefix))
+        # Now do mrmsdtw with different memory restrictions
+        for tauexp in [3, 4, 5, 6, 7]:
+            print("Doing mrmsdtw 10^%i"%tauexp)
+            tic = time.time()
+            path = mrmsdtw(X1, X2, 10**tauexp)
+            elapsed = time.time()-tic
+            print("Elapsed time mrmsdtw 10^%i: %.3g"%(tauexp, elapsed))
+            res['path_mrmsdtw%i'%tauexp] = path
+            res['elapsed_mrmsdtw%i'%tauexp] = elapsed
+        sio.savemat(approx_pathfilename, res)
+
 
 
 def align_corpus(foldername, compare_cpu, do_stretch):

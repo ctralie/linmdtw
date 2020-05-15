@@ -203,6 +203,7 @@ def mrmsdtw(X, Y, tau, debug=False, refine = True):
     # Figure out the subsampling factor for the
     # coarse alignment based on memory requirements
     d = int(np.ceil(np.sqrt(M*N/tau)))
+    print("d = ", d)
     anchors = DTW_Backtrace(np.ascontiguousarray(X[0::d, :]), 
                   np.ascontiguousarray(Y[0::d, :]))
     anchors = [[0, 0]] + anchors
