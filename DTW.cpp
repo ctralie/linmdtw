@@ -55,7 +55,7 @@ double c_dtw(double* X, double* Y, int* P, int M, int N, int d, int debug, doubl
 
                 if (diag > -1) {
                     score = diag;
-                    P[i*N + j] = diag;
+                    P[i*N + j] = DIAG;
                 }
                 if (up > -1 && (up < score || score == -1)) {
                     score = up;
