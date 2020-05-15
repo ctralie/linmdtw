@@ -153,6 +153,23 @@ def test_fastdtw():
     plt.scatter(path2[:, 1], path2[:, 0], marker='x')
     plt.show()
 
+def get_box_area(a1, a2):
+    """
+    Get the area of a box specified by two anchors
+    Parameters
+    ----------
+    a1: list(2)
+        Row/column of first anchor
+    a2: list(2)
+        Row/column of second anchor
+    Returns
+    -------
+    Area of box determined by these two anchors
+    """
+    m = a2[0]-a1[0]+1
+    n = a2[1]-a1[1]+1
+    return m*n
+
 def mrmsdtw(X, Y, tau, debug=False, level=0):
     """
     An implementation of the approximate, memory-restricted
@@ -200,49 +217,38 @@ def mrmsdtw(X, Y, tau, debug=False, level=0):
     while idx < len(anchors)-1:
         a1 = anchors[idx]
         a2 = anchors[idx+1]
-        m = a2[0]-a1[0]+1
-        n = a2[1]-a1[1]+1
-        if m*n > tau:
+        if get_box_area(a1, a2) > tau:
             # Subdivide cell
             i = int((a1[0]+a2[0])/2)
             j = int((a1[1]+a2[1])/2)
-            anchors = anchors[0:idx] + [[i, j]] + anchors[idx::]
+            anchors = anchors[0:idx+1] + [[i, j]] + anchors[idx+1::]
         else:
             # Move on
             idx += 1
     
     ## Step 3: Do alignments in each block
     path = []
-    startidx = [] # Keep track of index where each block starts
+    # Keep track of the "black anchor" indices in the path
+    banchors_idx = [0]
     for i in range(len(anchors)-1):
         a1 = anchors[i]
         a2 = anchors[i+1]
         box = [a1[0], a2[0], a1[1], a2[1]]
         pathi = DTWDiag_Backtrace(X, Y, box = box)
-        startidx.append(len(path))
+        banchors_idx.append(len(path)-1)
         path += pathi[0:-1]
     path += [[M-1, N-1]]
     
-    ## Step 4: Come up with next set of anchor points
+    ## Step 4: Come up with the set of "white anchors"
     # First choose them to be at the center of each block
-    anchors = []
-    for idx in range(len(startidx)):
-        p1 = path[startidx[idx]]
-        p2 = path[startidx[idx+1]]
-        i = int((p1[0]+p2[0])/2)
-        j = int((p1[1]+p2[1])/2)
-        anchors.append([i, j])
+    wanchors_idx = []
+    for idx in range(len(banchors_idx)-1):
+        wanchors_idx.append(int(0.5*(wanchors_idx[idx]+wanchors_idx[idx+1])))
     # Split anchor positions if the blocks are too big
-    ## TODO: Finish this
-    finalpath = path[0:]
-    idx = 0
-    while idx < len(anchors)-1:
-        a1 = anchors[idx]
-        a2 = anchors[idx+1]
-        m = a2[0]-a1[0]+1
-        n = a2[1]-a1[1]+1
-        if m*n > tau:
-            pass
+    for i in range(len(wanchors_idx)-1):
+        a1 = path[wanchors_idx[i]]
+        a2 = path[wanchors_idx[i+1]]
+    
 
     return path
 

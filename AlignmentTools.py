@@ -2,6 +2,7 @@ import numpy as np
 import scipy.interpolate as interp
 import matplotlib.pyplot as plt
 import scipy.sparse as sparse
+from numba import jit
 
 def get_diag_len(box, k):
     """
@@ -300,12 +301,65 @@ def getAlignmentCellDists(P1, P2):
         to their closest points in p1,
     """
     from sklearn.neighbors import KDTree, DistanceMetric
-    tree = KDTree(P1, metric="manhattan")
-    _, idx = tree.query(P2, k=1)
-    idx = idx.flatten()
-    P1Close = P1[idx, :]
-    dists = np.sum(np.abs(P2-P1Close), 1)
+    tree = KDTree(P1, leaf_size=10)
+    dists, _ = tree.query(P2, k=1)
+    return dists.flatten()
+
+
+@jit(nopython=True)
+def getAlignmentRowDists(P1, P2):
+    """
+    For each point in the first path, record the distance
+    of the closest point in the same row on the second path
+    Parameters
+    ----------
+    P1: ndarray(M, 2)
+        Ground truth warping path
+    P2: ndarray(N, 2)
+        Test warping path
+    Returns
+    -------
+    dists: ndarray(M)
+        The distances
+    """
+    i = 0
+    k = 0
+    dists = np.zeros(P1.shape[0])
+    i2 = 0
+    for i1 in range(P1.shape[0]):
+        # Move along P2 until it's at the same row
+        while P2[i2, 0] != P1[i1, 0]:
+            i2 += 1
+        # Check all entries of P2 that have the same row
+        mindist = abs(P2[i2, 1] - P1[i1, 1])
+        k = i2+1
+        while k < P2.shape[0] and P2[k, 0] == P1[i1, 0]:
+            mindist = min(mindist, abs(P2[k, 1]-P1[i1, 1]))
+            k += 1
+        dists[i1] = mindist
     return dists
+
+def getAlignmentRowColDists(P1, P2):
+    """
+    For each point in the first path, record the distance
+    of the closest point in the same row on the second path,
+    and vice versa.  Then repeat this along the columns
+    Parameters
+    ----------
+    P1: ndarray(M, 2)
+        Ground truth warping path
+    P2: ndarray(N, 2)
+        Test warping path
+    Returns
+    -------
+    dists: ndarray(2M+2N)
+        The distances
+    """
+    dists11 = getAlignmentRowDists(P1, P2)
+    dists12 = getAlignmentRowDists(P2, P1)
+    dists21 = getAlignmentRowDists(np.fliplr(P1), np.fliplr(P2))
+    dists22 = getAlignmentRowDists(np.fliplr(P2), np.fliplr(P1))
+    return np.concatenate((dists11, dists12, dists21, dists22))
 
 def get_hist(dists):
     """
