@@ -203,7 +203,6 @@ def mrmsdtw(X, Y, tau, debug=False, refine = True):
     # Figure out the subsampling factor for the
     # coarse alignment based on memory requirements
     d = int(np.ceil(np.sqrt(M*N/tau)))
-    print("d = ", d)
     anchors = DTW_Backtrace(np.ascontiguousarray(X[0::d, :]), 
                   np.ascontiguousarray(Y[0::d, :]))
     anchors = [[0, 0]] + anchors
@@ -235,8 +234,8 @@ def mrmsdtw(X, Y, tau, debug=False, refine = True):
         a2 = anchors[i+1]
         box = [a1[0], a2[0], a1[1], a2[1]]
         pathi = DTWDiag_Backtrace(X, Y, box = box)
-        banchors_idx.append(len(path)-1)
         path += pathi[0:-1]
+        banchors_idx.append(len(path)-1)
     path += [[M-1, N-1]]
     if not refine:
         return path
@@ -256,7 +255,6 @@ def mrmsdtw(X, Y, tau, debug=False, refine = True):
             wanchors_idx[i+1][0] -= 1
             a1 = path[wanchors_idx[i][-1]]
             a2 = path[wanchors_idx[i+1][0]]
-    
     ## Step 5: Do DTW between white anchors and splice path together
     pathret = path[0:wanchors_idx[0][0]+1]
     for i in range(len(wanchors_idx)-1):
@@ -280,21 +278,25 @@ def test_mrmsdtw():
     X, Y = get_figure8s(800, 600)
     D = getCSM(X, Y)
     tic = time.time()
-    path11 = mrmsdtw(X, Y, tau=10**5)
-    path12 = mrmsdtw(X, Y, tau=10**5, refine=False)
+    path11 = mrmsdtw(X, Y, tau=10**3)
+    path12 = mrmsdtw(X, Y, tau=10**3, refine=False)
     print("Elapsed time", time.time()-tic)
 
-    path2 = np.array(fastdtw(X, Y, 30), dtype=int)
-    path11 = np.array(path11, dtype=int)
-    path12 = np.array(path12, dtype=int)
-    plt.plot(np.sum(path11[1::, :] - path11[0:-1, :], axis=1))
-    plt.show()
-
-    plt.scatter(path11[:, 1], path11[:, 0])
-    plt.scatter(path12[:, 1], path12[:, 0])
-    #plt.scatter(path2[:, 1], path2[:, 0])
-    plt.legend(["mrmsdtw, tau=10^5, cost=%.3g"%np.sum(D[path11[:, 0], path11[:, 1]]), 
-                "mrmsdtw, tau=10^5, not refined, cost=%.3g"%np.sum(D[path12[:, 0], path12[:, 1]])])#, "fastdtw"])
+    fns = [lambda X, Y: mrmsdtw(X, Y, tau=10**4),
+           lambda X, Y: mrmsdtw(X, Y, tau=10**4, refine=False),
+           lambda X, Y: mrmsdtw(X, Y, tau=10**3),
+           lambda X, Y: mrmsdtw(X, Y, tau=10**3, refine=False),
+           lambda X, Y: mrmsdtw(X, Y, tau=10**2),
+           lambda X, Y: mrmsdtw(X, Y, tau=10**2, refine=False),
+           lambda X, Y: fastdtw(X, Y, 30)]
+    names = ["mrmsdtw, 10^4", "mrmsdtw, 10^4, no refinement",
+             "mrmsdtw, 10^3", "mrmsdtw, 10^3, no refinement",
+             "mrmsdtw, 10^2", "mrmsdtw, 10^2, no refinement", "fastdtw"]
+    for i, fn in enumerate(fns):
+        path = np.array(fn(X, Y), dtype=int)
+        names[i] = "%s (cost = %.3g)"%(names[i], np.sum(D[path[:, 0], path[:, 1]]))
+        plt.scatter(path[:, 1], path[:, 0])
+    plt.legend(names)
     plt.show()
 
 
