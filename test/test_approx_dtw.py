@@ -46,3 +46,18 @@ class TestDTWApprox:
         err1 = linmdtw.get_alignment_row_col_dists(path1, path2)
         err2 = linmdtw.get_alignment_row_col_dists(path1, path3)
         assert(np.mean(err1) <= np.mean(err2))
+
+    def test_mrmsdtw_refine(self):
+        """
+        Test that error is lower after refinement
+        """
+        X, Y = get_pcs(1000)
+        path1 = linmdtw.dtw_brute_backtrace(X, Y)
+        path1 = np.array(path1)
+        path2 = linmdtw.mrmsdtw(X, Y, tau=10**3, refine=True)
+        path2 = np.array(path2)
+        path3 = linmdtw.mrmsdtw(X, Y, tau=10**3, refine=False)
+        path3 = np.array(path3)
+        err1 = linmdtw.get_alignment_row_col_dists(path1, path2)
+        err2 = linmdtw.get_alignment_row_col_dists(path1, path3)
+        assert(np.mean(err1) <= np.mean(err2))

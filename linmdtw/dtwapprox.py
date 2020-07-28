@@ -145,7 +145,7 @@ def get_box_area(a1, a2):
     n = a2[1]-a1[1]+1
     return m*n
 
-def mrmsdtw(X, Y, tau, debug=False, refine = True):
+def mrmsdtw(X, Y, tau, debug=False, refine=True):
     """
     An implementation of the approximate, memory-restricted
     multiscale DTW technique from [2]
