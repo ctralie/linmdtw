@@ -372,21 +372,3 @@ def get_hist(dists):
         else:
             hist[d] = 1
     return hist
-
-def testAlignmentError():
-    #Test out alignment errors
-    N = 100
-    t = np.linspace(0, 1, N)
-    t2 = t**2
-    P1 = np.zeros((N, 2))
-    P1[:, 0] = t*N
-    P1[:, 1] = t2*N
-    t2 = t**2.2
-    P2 = np.zeros((N, 2))
-    P2[:, 0] = t*N
-    P2[:, 1] = t2*N
-    score = getAlignmentAreaDist(P1, P2, doPlot = True)
-    plt.show()
-
-if __name__ == '__main__':
-    testAlignmentError()

@@ -5,7 +5,7 @@ import platform
 from setuptools import setup
 from setuptools.extension import Extension
 
-# Ensure Cython is installed before we even attempt to install Ripser.py
+# Ensure Cython is installed before we even attempt to install linmdtw
 try:
     from Cython.Build import cythonize
     from Cython.Distutils import build_ext
@@ -13,6 +13,17 @@ except:
     print("You don't seem to have Cython installed. Please get a")
     print("copy from www.cython.org or install it with `pip install Cython`")
     sys.exit(1)
+
+## Get version information from _version.py
+import re
+VERSIONFILE="ripser/_version.py"
+verstrline = open(VERSIONFILE, "rt").read()
+VSRE = r"^__version__ = ['\"]([^'\"]*)['\"]"
+mo = re.search(VSRE, verstrline, re.M)
+if mo:
+    verstr = mo.group(1)
+else:
+    raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
 
 # Use README.md as the package long description  
 with open('README.md') as f:
@@ -54,15 +65,15 @@ ext_modules = Extension(
 
 
 setup(
-    name="dynseqalign",
-    version="0.1",
-    description="Alignment algorithms in C for numpy arrays",
+    name="linmdtw",
+    version=verstr,
+    description="A linear memory, exact, parallelizable algorithm for dynamic time warping in arbitrary Euclidean spaces",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Anonymous",
-    author_email="anonymous@gmail.com",
+    author_email="ctralie@alumni.princeton.edu",
     license='Apache2',
-    packages=['dynseqalign'],
+    packages=['dlinmdtw'],
     ext_modules=cythonize(ext_modules),
     install_requires=[
         'Cython',
