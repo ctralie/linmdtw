@@ -28,7 +28,7 @@ class TestDTW:
             linmdtw.dtw_brute_backtrace(X, X)
 
     def test_cpu_vs_gpu(self):
-        N = 1000
+        N = 300
         t1 = np.linspace(0, 1, N)
         t2 = t1**2
         X = np.zeros((N, 2), dtype=np.float32)
