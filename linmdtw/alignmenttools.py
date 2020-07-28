@@ -135,7 +135,7 @@ def get_ssm(X):
 
 
 
-def makePathStrictlyIncrease(path):
+def make_path_strictly_increase(path):
     """
     Given a warping path, remove all rows that do not
     strictly increase from the row before
