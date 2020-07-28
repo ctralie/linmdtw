@@ -15,6 +15,16 @@ def dtw_brute(X, Y, debug=False):
         A d-dimensional Euclidean point cloud with N points
     debug: boolean
         Whether to keep track of debugging information
+    Returns
+    -------
+    {
+        'cost': float
+            The optimal cost of the alignment (if computation didn't stop prematurely),
+        'U'/'L'/'UL': ndarray(M, N)
+            The choice matrices (if debugging),
+        'S': ndarray(M, N)
+            The accumulated cost matrix (if debugging)
+    }
     """
     from dynseqalign import DTW
     if not X.dtype == np.float32:
@@ -43,7 +53,22 @@ def dtw_brute_backtrace(X, Y, debug=False):
         A d-dimensional Euclidean point cloud with N points
     debug: boolean
         Whether to keep track of debugging information
+    Returns
+    -------
+    path (If not debugging): ndarray(K, 2)
+        The warping path
     
+    If debugging
+    {
+        'cost': float
+            The optimal cost of the alignment (if computation didn't stop prematurely),
+        'U'/'L'/'UL': ndarray(M, N)
+            The choice matrices (if debugging),
+        'S': ndarray(M, N)
+            The accumulated cost matrix (if debugging)
+        'path': ndarray(K, 2)
+            The warping path
+    }
     """
     res = dtw_brute(X, Y, debug)
     res['P'] = np.asarray(res['P'])
@@ -187,6 +212,10 @@ def linmdtw(X, Y, box = None, min_dim = 500, do_gpu = True, metadata = None):
         the GPU will go faster for larger synchronization problems
     metadata: dictionary
         A dictionary for storing information about the computation
+    Returns
+    -------
+    path: ndarray(K, 2)
+        The optimal warping path
     """
     if not X.dtype == np.float32:
         warnings.warn("X is not 32-bit, so creating 32-bit version")

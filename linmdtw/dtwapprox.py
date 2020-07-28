@@ -46,6 +46,10 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
         An int for keeping track of the level of recursion
     do_plot: boolean
         Whether to plot the warping path at each level and save to image files
+    Returns
+    -------
+    path: ndarray(K, 2)
+        The warping path
     """
     minTSsize = radius + 2
     M = X.shape[0]
@@ -164,6 +168,10 @@ def mrmsdtw(X, Y, tau, debug=False, refine=True):
         Whether to keep track of debugging information
     refine: boolean
         Whether to do refinement with the "white anchors"
+    Returns
+    -------
+    path: ndarray(K, 2)
+        The warping path
     """
     X = np.ascontiguousarray(X)
     Y = np.ascontiguousarray(Y)
