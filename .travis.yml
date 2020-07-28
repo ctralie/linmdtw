@@ -48,7 +48,7 @@ cache:
         - $HOME/.cache/pip
 
 script:
-  - pytest --cov ripser
+  - pytest --cov linmdtw
 
 # Upload the code coverage report
 after_success:
