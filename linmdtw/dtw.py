@@ -23,6 +23,10 @@ def dtw_brute(X, Y, debug=False):
     if not Y.dtype == np.float32:
         warnings.warn("Y is not 32-bit, so creating 32-bit version")
         Y = np.array(Y, dtype=np.float32)
+    if X.shape[0] < X.shape[1]:
+        warnings.warn("X has more columns than rows; did you mean to transpose?")
+    if Y.shape[0] < Y.shape[1]:
+        warnings.warn("Y has more columns than rows; did you mean to transpose?")
     return DTW(X, Y, int(debug))
 
 def dtw_brute_backtrace(X, Y, debug=False):
@@ -190,11 +194,16 @@ def linmdtw(X, Y, box = None, min_dim = 500, do_gpu = True, metadata = None):
     if not Y.dtype == np.float32:
         warnings.warn("Y is not 32-bit, so creating 32-bit version")
         Y = np.array(Y, dtype=np.float32)
+    if X.shape[0] < X.shape[1]:
+        warnings.warn("X has more columns than rows; did you mean to transpose?")
+    if Y.shape[0] < Y.shape[1]:
+        warnings.warn("Y has more columns than rows; did you mean to transpose?")
     dtw_diag_fn = dtw_diag
     if do_gpu:
-        from .dtwgpu import DTW_GPU_Initialized, DTW_GPU_Failed, init_gpu, dtw_diag_gpu
+        from .dtwgpu import DTW_GPU_Initialized, init_gpu, dtw_diag_gpu
         if not DTW_GPU_Initialized:
             init_gpu()
+        from .dtwgpu import DTW_GPU_Failed
         if DTW_GPU_Failed:
             warnings.warn("Falling back to CPU")
             do_gpu = False
