@@ -50,7 +50,7 @@ if [[ "$DISTRIB" == "conda" ]]; then
 
 
 else
-  pip3 install Cython numba
+  pip3 install numpy matplotlib numba scipy pip cython pytest pytest-cov
   pip3 install .
   pip3 install pytest-cov
 fi
