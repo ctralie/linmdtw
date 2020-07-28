@@ -1,30 +1,46 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import skimage.transform
-import time
-import librosa
-import librosa.display
-import pyrubberband as pyrb
-import subprocess
-from scipy.io import wavfile
-
-from scipy.ndimage.filters import gaussian_filter1d as gf1d
-from scipy.ndimage.filters import maximum_filter1d
-import os
-
-FFMPEG_BINARY = "ffmpeg"
+import warnings
 
 def load_audio(filename, sr = 44100):
-    wavfilename = "%s.wav"%filename
-    if os.path.exists(wavfilename):
+    """
+    Load an audio waveform from a file.  Try to use ffmpeg
+    to convert it to a .wav file so scipy's fast wavfile loader
+    can work.  Otherwise, fall back to the slower librosa
+    Parameters
+    ----------
+    filename: string
+        Path to audio file to load
+    sr: int
+        Sample rate to use
+    Returns
+    -------
+    y: ndarray(N)
+        Audio samples
+    sr: int
+        The sample rate that was actually used
+    """
+    try:
+        # First, try a faster version of loading audio
+        from scipy.io import wavfile
+        import subprocess
+        import os
+        FFMPEG_BINARY = "ffmpeg"
+        wavfilename = "%s.wav"%filename
+        if os.path.exists(wavfilename):
+            os.remove(wavfilename)
+        subprocess.call([FFMPEG_BINARY, "-i", filename, "-ar", "%i"%sr, "-ac", "1", wavfilename], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        _, y = wavfile.read(wavfilename)
+        y = y/2.0**15
         os.remove(wavfilename)
-    subprocess.call([FFMPEG_BINARY, "-i", filename, "-ar", "%i"%sr, "-ac", "1", wavfilename], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-    _, y = wavfile.read(wavfilename)
-    y = y/2.0**15
-    os.remove(wavfilename)
-    return y, sr
+        return y, sr
+    except:
+        # Otherwise, fall back to librosa
+        warnings.warn("Falling back to librosa for audio reading, which may be slow for long audio files")
+        import librosa
+        return librosa.load(filename, sr=sr)
 
-def getDLNC0(x, sr, hop_length, lag=10, do_plot=False):
+def get_DLNC0(x, sr, hop_length, lag=10, do_plot=False):
     """
     Compute decaying locally adaptive normalize C0 (DLNC0) features
     Parameters
@@ -37,7 +53,14 @@ def getDLNC0(x, sr, hop_length, lag=10, do_plot=False):
         Hop size between windows
     lag: int
         Number of lags to include
+    Returns
+    -------
+    X: ndarray(n_win, 12)
+        The DLNC0 features
     """
+    from scipy.ndimage.filters import gaussian_filter1d as gf1d
+    from scipy.ndimage.filters import maximum_filter1d
+    import librosa
     X = np.abs(librosa.cqt(x, sr=sr, hop_length=hop_length, bins_per_octave=12))
     # Half-wave rectify discrete derivative
     #X = librosa.amplitude_to_db(X, ref=np.max)
@@ -58,6 +81,7 @@ def getDLNC0(x, sr, hop_length, lag=10, do_plot=False):
     X = X2
     # Compute norms
     if do_plot:
+        import librosa.display
         plt.subplot(411)
         librosa.display.specshow(X, sr=sr, x_axis='time', y_axis='chroma')
     norms = np.sqrt(np.sum(X**2, 0))
@@ -66,6 +90,7 @@ def getDLNC0(x, sr, hop_length, lag=10, do_plot=False):
         plt.plot(norms)
     norms = maximum_filter1d(norms, size=int(2*sr/hop_length))
     if do_plot:
+        import librosa.display
         plt.plot(norms)
         plt.subplot(413)
         X = X/norms[None, :]
@@ -86,14 +111,30 @@ def getDLNC0(x, sr, hop_length, lag=10, do_plot=False):
 def get_mixed_DLNC0_CENS(x, sr, hop_length, lam=0.1):
     """
     Concatenate DLNC0 to CENS
+    Parameters
+    ----------
+    x: ndarray(N)
+        Audio samples
+    sr: int
+        Sample rate
+    hop_length: int
+        Hop size between windows
+    lam: float
+        The coefficient in front of the CENS features
+    Returns
+    -------
+    X: ndarray(n_win, 24)
+        DLNC0 features along the first 12 columns, 
+        weighted CENS along the next 12 columns
     """
-    X1 = getDLNC0(x, sr, hop_length).T
+    import librosa
+    X1 = get_DLNC0(x, sr, hop_length).T
     X2 = lam*librosa.feature.chroma_cens(y=x, sr=sr, hop_length=hop_length).T
     return np.concatenate((X1, X2), axis=1)
 
-def get_mfcc_mod(x, sr, hop_length, n_mfcc=120, drop=20, finaldim=-1, n_fft = 2048):
+def get_mfcc_mod(x, sr, hop_length, n_mfcc=120, drop=20, n_fft = 2048):
     """
-    Compute the MFCC_mod features, as described in Gadermaier 2019
+    Compute the mfcc_mod features, as described in Gadermaier 2019
     Parameters
     ----------
     x: ndarray(N)
@@ -106,38 +147,45 @@ def get_mfcc_mod(x, sr, hop_length, n_mfcc=120, drop=20, finaldim=-1, n_fft = 20
         Number of mfcc coefficients to compute
     drop: int
         Index under which to ignore coefficients
-    finaldim: int
-        Resize dimension
     n_fft: int
         Number of fft points to use in each window
+    Returns
+    -------
+    X: ndarray(n_win, n_mfcc-drop)
+        The mfcc-mod features
     """
+    import skimage.transform
+    import librosa
     X = librosa.feature.mfcc(y=x, sr=sr, hop_length=hop_length, n_mfcc = n_mfcc, n_fft=n_fft, htk=True)
     X = X[drop::, :].T
-    if finaldim > -1:
-        X = skimage.transform.resize(X, (X.shape[0], finaldim), anti_aliasing=True, mode='constant')
     return X
 
-def stretch_audio(x1, x2, sr, path, hop_length, outprefix):
+def stretch_audio(x1, x2, sr, path, hop_length):
     """
-    Wrap around pyrubberband to warp the audio
+    Wrap around pyrubberband to warp one audio stream
+    to another, according to some warping path
     Parameters
     ----------
-    x1: ndarray
+    x1: ndarray(M)
         First audio stream
-    x2: ndarray
+    x2: ndarray(N)
         Second audio stream
     sr: int
         Sample rate
-    path: ndarray(M, 2)
+    path: ndarray(P, 2)
         Warping path, in units of windows
     hop_length: int
         The hop length between windows
-    outprefix: string
-        The prefix of the output file to which to save the result
+    Returns
+    -------
+    x3: ndarray(N, 2)
+        The synchronized audio.  x2 is in the right channel,
+        and x1 stretched to x2 is in the left channel
     """
-    from AlignmentTools import makePathStrictlyIncrease
+    from .alignmenttools import make_path_strictly_increase
+    import pyrubberband as pyrb
     print("Stretching...")
-    #path = makePathStrictlyIncrease(path)
+    path = make_path_strictly_increase(path)
     path *= hop_length
     path = [(row[0], row[1]) for row in path]
     path.append((x1.size, x2.size))
@@ -145,30 +193,4 @@ def stretch_audio(x1, x2, sr, path, hop_length, outprefix):
     x3[:, 1] = x2
     x1_stretch = pyrb.timemap_stretch(x1, sr, path)
     x3[:, 0] = x1_stretch
-    wavfilename = "{}.wav".format(outprefix)
-    mp3filename = "{}.mp3".format(outprefix)
-    if os.path.exists(wavfilename):
-        os.remove(wavfilename)
-    if os.path.exists(mp3filename):
-        os.remove(mp3filename)
-    wavfile.write(wavfilename, sr, x3)
-    subprocess.call(["ffmpeg", "-i", wavfilename, mp3filename])
-    os.remove(wavfilename)
-
-
-
-def test_sync():
-    import scipy.io as sio
-    hop_length = 512
-    sr = 22050
-    filename1 = "OrchestralPieces/Long/2_0.mp3"
-    x1, sr = load_audio(filename1, 22050)
-    filename2 = "OrchestralPieces/Long/2_1.mp3"
-    x2, sr = load_audio(filename2, 22050)
-    path = sio.loadmat("OrchestralPieces/Long/2_0.mp3_chroma_path.mat")['path_gpu']
-    hop_length = 512
-    outprefix = "synced"
-    stretch_audio(x1, x2, sr, path, hop_length, outprefix, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-
-if __name__ == '__main__':
-    test_sync()
+    return x3
