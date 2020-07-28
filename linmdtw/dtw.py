@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io as sio
-from AlignmentTools import *
+from alignmenttools import get_diag_len, get_diag_indices, update_alignment_metadata
 
-def DTW(X, Y, debug=False):
+def dtw(X, Y, debug=False):
     """
     Compute dynamic time warping between two time-ordered
     point clouds in Euclidean space, using cython on the 
@@ -17,10 +17,10 @@ def DTW(X, Y, debug=False):
     debug: boolean
         Whether to keep track of debugging information
     """
-    import dynseqalign
-    return dynseqalign.DTW(X, Y, int(debug))
+    from dynseqalign import DTW
+    return DTW(X, Y, int(debug))
 
-def DTW_Backtrace(X, Y, debug=False):
+def dtw_backtrace(X, Y, debug=False):
     """
     Compute dynamic time warping between two time-ordered
     point clouds in Euclidean space, using cython on the 
@@ -34,7 +34,7 @@ def DTW_Backtrace(X, Y, debug=False):
     debug: boolean
         Whether to keep track of debugging information
     """
-    res = DTW(X, Y, debug)
+    res = dtw(X, Y, debug)
     res['P'] = np.asarray(res['P'])
     if debug:
         for key in ['U', 'L', 'UL', 'S']:
@@ -55,8 +55,9 @@ def DTW_Backtrace(X, Y, debug=False):
     return path
     
 
-def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=False, metadata=None):
+def dtw_diag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=False, metadata=None):
     """
+    A CPU version of linear memory diagonal DTW
     Parameters
     ----------
     X: ndarray(M, d)
@@ -88,7 +89,7 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fal
             The saved cross-similarity distances if a save index was chosen
     }
     """
-    import dynseqalign
+    from dynseqalign import DTW_Diag_Step
     if not box:
         box = [0, X.shape[0]-1, 0, Y.shape[0]-1]
     M = box[1] - box[0] + 1
@@ -122,7 +123,7 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fal
     # Loop through diagonals
     res = {}
     for k in range(M+N-1):
-        dynseqalign.DTW_Diag_Step(d0, d1, d2, csm0, csm1, csm2, X, Y, diagLen, box, int(reverse), k, int(debug), U, L, UL, S)
+        DTW_Diag_Step(d0, d1, d2, csm0, csm1, csm2, X, Y, diagLen, box, int(reverse), k, int(debug), U, L, UL, S)
         csm2len = get_diag_len(box, k)
         if metadata:
             update_alignment_metadata(metadata, csm2len)
@@ -156,8 +157,9 @@ def DTWDiag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fal
         res['S'] = S
     return res
 
-def DTWDiag_Backtrace(X, Y, box = None, min_dim = 500, DTWDiag_fn = DTWDiag, metadata = None):
+def linmdtw(X, Y, box = None, min_dim = 500, dtw_diag_fn = dtw_diag, metadata = None):
     """
+    Linear memory exact, parallelizable DTW
     Parameters
     ----------
     X: ndarray(N1, d)
@@ -183,7 +185,7 @@ def DTWDiag_Backtrace(X, Y, box = None, min_dim = 500, DTWDiag_fn = DTWDiag, met
     if M < min_dim or N < min_dim:
         if metadata:
             metadata['totalCells'] += M*N
-        path = DTW_Backtrace(X[box[0]:box[1]+1, :], Y[box[2]:box[3]+1, :])
+        path = dtw_backtrace(X[box[0]:box[1]+1, :], Y[box[2]:box[3]+1, :])
         for p in path:
             p[0] += box[0]
             p[1] += box[2]
@@ -193,13 +195,13 @@ def DTWDiag_Backtrace(X, Y, box = None, min_dim = 500, DTWDiag_fn = DTWDiag, met
     K = M + N - 1
     # Do the forward computation
     k_save = int(np.ceil(K/2.0))
-    res1 = DTWDiag_fn(X, Y, k_save=k_save, k_stop=k_save, box=box, metadata=metadata)
+    res1 = dtw_diag_fn(X, Y, k_save=k_save, k_stop=k_save, box=box, metadata=metadata)
 
     # Do the backward computation
     k_save_rev = k_save
     if K%2 == 0:
         k_save_rev += 1
-    res2 = DTWDiag_fn(X, Y, k_save=k_save_rev, k_stop=k_save_rev, box=box, reverse=True, metadata=metadata)
+    res2 = dtw_diag_fn(X, Y, k_save=k_save_rev, k_stop=k_save_rev, box=box, reverse=True, metadata=metadata)
     res2['d0'], res2['d2'] = res2['d2'], res2['d0']
     res2['csm0'], res2['csm2'] = res2['csm2'], res2['csm0']
     # Chop off extra diagonal elements
@@ -227,12 +229,12 @@ def DTWDiag_Backtrace(X, Y, box = None, min_dim = 500, DTWDiag_fn = DTWDiag, met
     # Recursively compute left paths
     left_path = []
     box_left = [box[0], min_idxs[0], box[2], min_idxs[1]]
-    left_path = DTWDiag_Backtrace(X, Y, box_left, min_dim, DTWDiag_fn, metadata)
+    left_path = linmdtw(X, Y, box_left, min_dim, dtw_diag_fn, metadata)
 
     # Recursively compute right paths
     right_path = []
     box_right = [min_idxs[0], box[1], min_idxs[1], box[3]]
-    right_path = DTWDiag_Backtrace(X, Y, box_right, min_dim, DTWDiag_fn, metadata)
+    right_path = linmdtw(X, Y, box_right, min_dim, dtw_diag_fn, metadata)
     
     return left_path + right_path[1::]
 

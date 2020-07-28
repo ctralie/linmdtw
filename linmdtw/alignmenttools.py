@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.interpolate as interp
 import matplotlib.pyplot as plt
 import scipy.sparse as sparse
 from numba import jit
@@ -100,7 +99,7 @@ def update_alignment_metadata(metadata = None, newcells = 0):
                 if 'timeStart' in metadata:
                     print("Elapsed time: {}".format(time.time()-metadata['timeStart']))
 
-def getCSM(X, Y):
+def get_csm(X, Y):
     """
     Return the Euclidean cross-similarity matrix between X and Y
     Paramters
@@ -120,7 +119,7 @@ def getCSM(X, Y):
     C[C < 0] = 0
     return np.sqrt(C)
 
-def getSSM(X):
+def get_ssm(X):
     """
     Return the SSM between all rows of a time-ordered Euclidean point cloud X
     Paramters
@@ -132,105 +131,9 @@ def getSSM(X):
     D: ndarray(M, M)
         The self-similarity matrix
     """
-    return getCSM(X, X)
+    return get_csm(X, X)
 
 
-###################################################
-#                Warping Paths                    #
-###################################################
-def getInverseFnEquallySampled(t, x):
-    N = len(t)
-    t2 = np.linspace(np.min(x), np.max(x), N)
-    try:
-        res = interp.spline(x, t, t2)
-        return res
-    except:
-        return t
-
-def getWarpDictionary(N, plotPaths = False):
-    t = np.linspace(0, 1, N)
-    D = []
-    #Polynomial
-    if plotPaths:
-        plt.subplot(131)
-        plt.title('Polynomial')
-    for p in range(-4, 6):
-        tp = p
-        if tp < 0:
-            tp = -1.0/tp
-        x = t**(tp**1)
-        D.append(x)
-        if plotPaths:
-            plt.plot(x)
-    #Exponential / Logarithmic
-    if plotPaths:
-        plt.subplot(132)
-        plt.title('Exponential / Logarithmic')
-    for p in range(2, 6):
-        t = np.linspace(1, p**p, N)
-        x = np.log(t)
-        x = x - np.min(x)
-        x = x/np.max(x)
-        t = t/np.max(t)
-        x2 = getInverseFnEquallySampled(t, x)
-        x2 = x2 - np.min(x2)
-        x2 = x2/np.max(x2)
-        #D.append(x)
-        #D.append(x2)
-        if plotPaths:
-            plt.plot(x)
-            plt.plot(x2)
-    #Hyperbolic Tangent
-    if plotPaths:
-        plt.subplot(133)
-        plt.title('Hyperbolic Tangent')
-    for p in range(2, 5):
-        t = np.linspace(-2, p, N)
-        x = np.tanh(t)
-        x = x - np.min(x)
-        x = x/np.max(x)
-        t = t/np.max(t)
-        x2 = getInverseFnEquallySampled(t, x)
-        x2 = x2 - np.min(x2)
-        x2 = x2/np.max(x2)
-        D.append(x)
-        D.append(x2)
-        if plotPaths:
-            plt.plot(x)
-            plt.plot(x2)
-    D = np.array(D)
-    return D
-
-def getWarpingPath(D, k, doPlot = False):
-    """
-    Return a warping path made up of k elements
-    drawn from dictionary D
-    """
-    N = D.shape[0]
-    dim = D.shape[1]
-    ret = np.zeros(dim)
-    idxs = np.random.permutation(N)[0:k]
-    weights = np.zeros(N)
-    weights[idxs] = np.random.rand(k)
-    weights = weights / np.sum(weights)
-    res = weights.dot(D)
-    res = res - np.min(res)
-    res = res/np.max(res)
-    if doPlot:
-        plt.plot(res)
-        for idx in idxs:
-            plt.plot(np.arange(dim), D[idx, :], linestyle='--')
-        plt.title('Constructed Warping Path')
-    return res
-
-def getInterpolatedEuclideanTimeSeries(X, t):
-    M = X.shape[0]
-    d = X.shape[1]
-    t0 = np.linspace(0, 1, M)
-    dix = np.arange(d)
-    f = interp.interp2d(dix, t0, X, kind='linear')
-    Y = f(dix, t)
-    return Y
 
 def makePathStrictlyIncrease(path):
     """
@@ -372,3 +275,96 @@ def get_hist(dists):
         else:
             hist[d] = 1
     return hist
+
+def getInverseFnEquallySampled(t, x):
+    N = len(t)
+    t2 = np.linspace(np.min(x), np.max(x), N)
+    try:
+        res = interp.spline(x, t, t2)
+        return res
+    except:
+        return t
+
+def getWarpDictionary(N, plotPaths = False):
+    t = np.linspace(0, 1, N)
+    D = []
+    #Polynomial
+    if plotPaths:
+        plt.subplot(131)
+        plt.title('Polynomial')
+    for p in range(-4, 6):
+        tp = p
+        if tp < 0:
+            tp = -1.0/tp
+        x = t**(tp**1)
+        D.append(x)
+        if plotPaths:
+            plt.plot(x)
+    #Exponential / Logarithmic
+    if plotPaths:
+        plt.subplot(132)
+        plt.title('Exponential / Logarithmic')
+    for p in range(2, 6):
+        t = np.linspace(1, p**p, N)
+        x = np.log(t)
+        x = x - np.min(x)
+        x = x/np.max(x)
+        t = t/np.max(t)
+        x2 = getInverseFnEquallySampled(t, x)
+        x2 = x2 - np.min(x2)
+        x2 = x2/np.max(x2)
+        #D.append(x)
+        #D.append(x2)
+        if plotPaths:
+            plt.plot(x)
+            plt.plot(x2)
+    #Hyperbolic Tangent
+    if plotPaths:
+        plt.subplot(133)
+        plt.title('Hyperbolic Tangent')
+    for p in range(2, 5):
+        t = np.linspace(-2, p, N)
+        x = np.tanh(t)
+        x = x - np.min(x)
+        x = x/np.max(x)
+        t = t/np.max(t)
+        x2 = getInverseFnEquallySampled(t, x)
+        x2 = x2 - np.min(x2)
+        x2 = x2/np.max(x2)
+        D.append(x)
+        D.append(x2)
+        if plotPaths:
+            plt.plot(x)
+            plt.plot(x2)
+    D = np.array(D)
+    return D
+
+def getWarpingPath(D, k, doPlot = False):
+    """
+    Return a warping path made up of k elements
+    drawn from dictionary D
+    """
+    N = D.shape[0]
+    dim = D.shape[1]
+    idxs = np.random.permutation(N)[0:k]
+    weights = np.zeros(N)
+    weights[idxs] = np.random.rand(k)
+    weights = weights / np.sum(weights)
+    res = weights.dot(D)
+    res = res - np.min(res)
+    res = res/np.max(res)
+    if doPlot:
+        plt.plot(res)
+        for idx in idxs:
+            plt.plot(np.arange(dim), D[idx, :], linestyle='--')
+        plt.title('Constructed Warping Path')
+    return res
+
+def getInterpolatedEuclideanTimeSeries(X, t):
+    M = X.shape[0]
+    d = X.shape[1]
+    t0 = np.linspace(0, 1, M)
+    dix = np.arange(d)
+    f = interp.interp2d(dix, t0, X, kind='linear')
+    Y = f(dix, t)
+    return Y

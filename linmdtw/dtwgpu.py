@@ -10,7 +10,7 @@ import time
 import scipy.io as sio
 import pkg_resources
 import sys
-from AlignmentTools import *
+from alignmenttools import get_diag_len, get_diag_indices, update_alignment_metadata
 
 from pycuda.compiler import SourceModule
 
@@ -29,7 +29,7 @@ def initParallelAlgorithms():
     global DTW_Step_
     DTW_Step_ = mod.get_function("DTW_Diag_Step")
 
-def DTWDiag_GPU(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=False, metadata=None):
+def dtw_diag_gpu(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=False, metadata=None):
     """
     Compute dynamic time warping between two time-ordered
     point clouds in Euclidean space, using CUDA on the back end

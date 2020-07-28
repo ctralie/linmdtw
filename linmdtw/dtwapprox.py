@@ -3,10 +3,8 @@ import matplotlib.pyplot as plt
 import scipy.io as sio
 from scipy import sparse
 import time
-from AlignmentTools import *
-from DTW import *
-from DTWGPU import *
 import dynseqalign
+from dtw import dtw_backtrace, linmdtw
 
 def fill_block(A, p, radius, val):
     """
@@ -46,6 +44,8 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
         Whether to keep track of debugging information
     level: int
         An int for keeping track of the level of recursion
+    do_plot: boolean
+        Whether to plot the warping path at each level and save to image files
     """
     minTSsize = radius + 2
     M = X.shape[0]
@@ -53,7 +53,7 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
     X = np.ascontiguousarray(X)
     Y = np.ascontiguousarray(Y)
     if M < radius or N < radius:
-        return DTW_Backtrace(X, Y)
+        return dtw_backtrace(X, Y)
     # Recursive step
     path = fastdtw(X[0::2, :], Y[0::2, :], radius, debug, level+1, do_plot)
     if type(path) is dict:
@@ -128,31 +128,6 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
     else:
         return path
 
-def test_fastdtw():
-    from fastdtw import fastdtw as fastdtw2
-    from scipy.spatial.distance import euclidean
-    from Tests import get_figure8s
-
-    X, Y = get_figure8s(800, 600)
-    tic = time.time()
-    res1 = DTW_Backtrace(X, Y, debug=True)
-    print("Elapsed time ordinary", time.time()-tic)
-    path1 = np.array(res1['path'])
-
-    tic = time.time()
-    res2 = fastdtw(X, Y, 20, debug=True)
-    print("Elapsed time my fastdtw", time.time()-tic)
-
-    tic = time.time()
-    fastdtw2(X, Y, radius = 20, dist=euclidean)
-    print("Elapsed time other fastdtw", time.time()-tic)
-
-    path2 = np.array(res2['path'])
-    plt.imshow(res2['S'].toarray())
-    plt.scatter(path1[:, 1], path1[:, 0])
-    plt.scatter(path2[:, 1], path2[:, 0], marker='x')
-    plt.show()
-
 def get_box_area(a1, a2):
     """
     Get the area of a box specified by two anchors
@@ -197,14 +172,13 @@ def mrmsdtw(X, Y, tau, debug=False, refine = True):
     if M*N < tau:
         # If the matrix is already within the memory bounds, simply
         # return DTW
-        return DTW_Backtrace(X, Y)
+        return dtw_backtrace(X, Y)
 
     ## Step 1: Perform DTW at the coarse level
     # Figure out the subsampling factor for the
     # coarse alignment based on memory requirements
     d = int(np.ceil(np.sqrt(M*N/tau)))
-    print("d = ", d)
-    anchors = DTW_Backtrace(np.ascontiguousarray(X[0::d, :]), 
+    anchors = dtw_backtrace(np.ascontiguousarray(X[0::d, :]), 
                   np.ascontiguousarray(Y[0::d, :]))
     anchors = [[0, 0]] + anchors
     anchors = (np.array(anchors)*d).tolist()
@@ -234,7 +208,7 @@ def mrmsdtw(X, Y, tau, debug=False, refine = True):
         a1 = anchors[i]
         a2 = anchors[i+1]
         box = [a1[0], a2[0], a1[1], a2[1]]
-        pathi = DTWDiag_Backtrace(X, Y, box = box)
+        pathi = linmdtw(X, Y, box = box)
         path += pathi[0:-1]
         banchors_idx.append(len(path)-1)
     path += [[M-1, N-1]]
@@ -262,7 +236,7 @@ def mrmsdtw(X, Y, tau, debug=False, refine = True):
         a1 = path[wanchors_idx[i][-1]]
         a2 = path[wanchors_idx[i+1][0]]
         box = [a1[0], a2[0], a1[1], a2[1]]
-        pathi = DTWDiag_Backtrace(X, Y, box = box)
+        pathi = linmdtw(X, Y, box = box)
         pathret += pathi[0:-1]
         # If there's a gap in between this box and 
         # the next one, use the path from before
@@ -273,34 +247,3 @@ def mrmsdtw(X, Y, tau, debug=False, refine = True):
     i1 = wanchors_idx[-1][-1]
     pathret += path[i1::]
     return pathret
-
-def test_mrmsdtw():
-    from Tests import get_figure8s
-    X, Y = get_figure8s(800, 600)
-    D = getCSM(X, Y)
-    tic = time.time()
-    path11 = mrmsdtw(X, Y, tau=10**3)
-    path12 = mrmsdtw(X, Y, tau=10**3, refine=False)
-    print("Elapsed time", time.time()-tic)
-
-    fns = [lambda X, Y: mrmsdtw(X, Y, tau=10**4),
-           lambda X, Y: mrmsdtw(X, Y, tau=10**4, refine=False),
-           lambda X, Y: mrmsdtw(X, Y, tau=10**3),
-           lambda X, Y: mrmsdtw(X, Y, tau=10**3, refine=False),
-           lambda X, Y: mrmsdtw(X, Y, tau=10**2),
-           lambda X, Y: mrmsdtw(X, Y, tau=10**2, refine=False),
-           lambda X, Y: fastdtw(X, Y, 30)]
-    names = ["mrmsdtw, 10^4", "mrmsdtw, 10^4, no refinement",
-             "mrmsdtw, 10^3", "mrmsdtw, 10^3, no refinement",
-             "mrmsdtw, 10^2", "mrmsdtw, 10^2, no refinement", "fastdtw"]
-    for i, fn in enumerate(fns):
-        path = np.array(fn(X, Y), dtype=int)
-        names[i] = "%s (cost = %.3g)"%(names[i], np.sum(D[path[:, 0], path[:, 1]]))
-        plt.scatter(path[:, 1], path[:, 0])
-    plt.legend(names)
-    plt.show()
-
-
-if __name__ == '__main__':
-    #test_fastdtw()
-    test_mrmsdtw()
