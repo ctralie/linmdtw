@@ -7,8 +7,8 @@ import linmdtw
 class TestLibrary:
     # Does the library install in scope? Are the objects in scope?
     def test_import(self):
-        import ripser
-        from ripser import ripser, Rips
+        import linmdtw
+        from linmdtw import linmdtw, dtw_brute, dtw_brute_backtrace, fastdtw, mrmsdtw
         assert 1
 
 
