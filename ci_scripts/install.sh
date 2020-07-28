@@ -38,7 +38,7 @@ if [[ "$DISTRIB" == "conda" ]]; then
   cd $TRAVIS_BUILD_DIR
 
   # Configure the conda environment and put it in the path using the provided versions
-  conda create -n testenv --yes python=$PYTHON_VERSION numpy matplotlib scipy pip cython pytest pytest-cov
+  conda create -n testenv --yes python=$PYTHON_VERSION numpy matplotlib numba scipy pip cython pytest pytest-cov
 
   source activate testenv
 
