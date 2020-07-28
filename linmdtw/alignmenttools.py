@@ -1,6 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import scipy.sparse as sparse
 from numba import jit
 
 def get_diag_len(box, k):
@@ -182,6 +180,7 @@ def get_alignment_area_dist(P1, P2, doPlot = False):
     score: float
         The area score
     """
+    import scipy.sparse as sparse
     M = np.max(P1[:, 0])
     N = np.max(P1[:, 1])
     A1 = sparse.lil_matrix((M, N))
@@ -197,6 +196,7 @@ def get_alignment_area_dist(P1, P2, doPlot = False):
     A = np.abs(A1 - A2)
     dist = np.sum(A)/(M + N)
     if doPlot:
+        import matplotlib.pyplot as plt
         plt.imshow(A.toarray())
         plt.scatter(P1[:, 1], P1[:, 0], 5, 'c', edgecolor = 'none')
         plt.scatter(P2[:, 1], P2[:, 0], 5, 'r', edgecolor = 'none')
@@ -307,6 +307,7 @@ def get_warp_dictionary(N, plotPaths = False):
     D = []
     #Polynomial
     if plotPaths:
+        import matplotlib.pyplot as plt
         plt.subplot(131)
         plt.title('Polynomial')
     for p in range(-4, 6):
@@ -316,9 +317,11 @@ def get_warp_dictionary(N, plotPaths = False):
         x = t**(tp**1)
         D.append(x)
         if plotPaths:
+            import matplotlib.pyplot as plt
             plt.plot(x)
     #Exponential / Logarithmic
     if plotPaths:
+        import matplotlib.pyplot as plt
         plt.subplot(132)
         plt.title('Exponential / Logarithmic')
     for p in range(2, 6):
@@ -333,10 +336,12 @@ def get_warp_dictionary(N, plotPaths = False):
         #D.append(x)
         #D.append(x2)
         if plotPaths:
+            import matplotlib.pyplot as plt
             plt.plot(x)
             plt.plot(x2)
     #Hyperbolic Tangent
     if plotPaths:
+        import matplotlib.pyplot as plt
         plt.subplot(133)
         plt.title('Hyperbolic Tangent')
     for p in range(2, 5):
@@ -351,6 +356,7 @@ def get_warp_dictionary(N, plotPaths = False):
         D.append(x)
         D.append(x2)
         if plotPaths:
+            import matplotlib.pyplot as plt
             plt.plot(x)
             plt.plot(x2)
     D = np.array(D)
@@ -371,6 +377,7 @@ def get_warping_path_dict(D, k, doPlot = False):
     res = res - np.min(res)
     res = res/np.max(res)
     if doPlot:
+        import matplotlib.pyplot as plt
         plt.plot(res)
         for idx in idxs:
             plt.plot(np.arange(dim), D[idx, :], linestyle='--')
