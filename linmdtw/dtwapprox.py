@@ -178,9 +178,9 @@ def mrmsdtw(X, Y, tau, debug=False, refine = True):
     # Figure out the subsampling factor for the
     # coarse alignment based on memory requirements
     d = int(np.ceil(np.sqrt(M*N/tau)))
-    anchors = dtw_brute_backtrace(np.ascontiguousarray(X[0::d, :]), 
-                  np.ascontiguousarray(Y[0::d, :]))
-    anchors = [[0, 0]] + anchors
+    X2 = np.ascontiguousarray(X[0::d, :])
+    Y2 = np.ascontiguousarray(Y[0::d, :])
+    anchors = dtw_brute_backtrace(X2, Y2)
     anchors = (np.array(anchors)*d).tolist()
     if anchors[-1][0] < M-1 or anchors[-1][1] < N-1:
         anchors.append([M-1, N-1])
@@ -208,7 +208,7 @@ def mrmsdtw(X, Y, tau, debug=False, refine = True):
         a1 = anchors[i]
         a2 = anchors[i+1]
         box = [a1[0], a2[0], a1[1], a2[1]]
-        pathi = linmdtw(X, Y, box = box)
+        pathi = linmdtw(X, Y, box=box)
         path += pathi[0:-1]
         banchors_idx.append(len(path)-1)
     path += [[M-1, N-1]]
@@ -236,7 +236,7 @@ def mrmsdtw(X, Y, tau, debug=False, refine = True):
         a1 = path[wanchors_idx[i][-1]]
         a2 = path[wanchors_idx[i+1][0]]
         box = [a1[0], a2[0], a1[1], a2[1]]
-        pathi = linmdtw(X, Y, box = box)
+        pathi = linmdtw(X, Y, box=box)
         pathret += pathi[0:-1]
         # If there's a gap in between this box and 
         # the next one, use the path from before
