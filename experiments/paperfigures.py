@@ -13,7 +13,7 @@ def get_cdf(mat, times):
     return cdf
 
 def plot_err_distributions(short = True):
-    from AlignmentTools import getAlignmentRowColDists
+    from linmdtw import get_alignment_row_col_dists
     foldername = "OrchestralPieces/Short"
     if not short:
         foldername = "OrchestralPieces/Long"
@@ -26,7 +26,7 @@ def plot_err_distributions(short = True):
     #tauexp = [3, 4, 5, 6, 7]
     tauexp = [5, 7]
 
-    distfn = getAlignmentRowColDists
+    distfn = get_alignment_row_col_dists
     XCPUCPU = np.zeros((N, len(times)))
     XGPUCPU = np.zeros((N, len(times)))
     XChromaFastDTW = np.zeros((N, len(times)))
@@ -91,9 +91,9 @@ def plot_err_distributions(short = True):
             cdf += (X[:, k]**p).tolist()
     plt.figure(figsize=(6, 4))
     palette = sns.color_palette("cubehelix", len(times))
-    df = pd.DataFrame({"DTW Type":approxtype, "Error (sec)":cdfthresh, "CDF":cdf})
+    df = pd.DataFrame({"DTW Type":approxtype, "Error (sec)":cdfthresh, "Proportion within Error Tolerance":cdf})
     ax = plt.gca()
-    g = sns.swarmplot(x="DTW Type", y="CDF", hue="Error (sec)", data=df, palette=palette)
+    g = sns.swarmplot(x="DTW Type", y="Proportion within Error Tolerance", hue="Error (sec)", data=df, palette=palette)
     ticks = np.linspace(0, 1, 11)
     ax.set_yticks(ticks)
     ax.set_yticklabels(["%.2g"%(t**(1.0/p)) for t in ticks])
@@ -106,7 +106,7 @@ def plot_err_distributions(short = True):
         plt.savefig("Longer.svg", bbox_inches='tight')
     
 
-def drawSystolicArray():
+def draw_systolic_array():
     plt.figure(figsize=(5, 5))
     AW = 0.2
     N = 6
@@ -216,8 +216,8 @@ def get_memory_table():
             print("FastDTW: ", 4*min(M, N)*(4*delta+5)/(1024**2), "MB" )
 
 #plot_err_distributions(short=True)
-#plot_err_distributions(short=False)
-#drawSystolicArray()
+plot_err_distributions(short=False)
+#draw_systolic_array()
 #get_length_distributions()
 #get_cell_usage_distributions()
-get_memory_table()
+#get_memory_table()

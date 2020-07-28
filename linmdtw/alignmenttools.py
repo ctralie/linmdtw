@@ -149,7 +149,7 @@ def make_path_strictly_increase(path):
             toKeep[i] = 0
     return path[toKeep == 1, :]
 
-def getAlignmentAreaDist(P1, P2, doPlot = False):
+def get_alignment_area_dist(P1, P2, doPlot = False):
     """
     Compute area-based alignment error.  Assume that the 
     warping paths are on the same grid
@@ -187,7 +187,7 @@ def getAlignmentAreaDist(P1, P2, doPlot = False):
         plt.title("Dist = %g"%dist)
     return dist
 
-def getAlignmentCellDists(P1, P2):
+def get_alignment_cell_dists(P1, P2):
     """
     Return the L1 distances between each point on the warping path
     P2 to the closest point on the warping path P1
@@ -210,7 +210,7 @@ def getAlignmentCellDists(P1, P2):
 
 
 @jit(nopython=True)
-def getAlignmentRowDists(P1, P2):
+def get_alignment_row_dists(P1, P2):
     """
     For each point in the first path, record the distance
     of the closest point in the same row on the second path
@@ -242,7 +242,7 @@ def getAlignmentRowDists(P1, P2):
         dists[i1] = mindist
     return dists
 
-def getAlignmentRowColDists(P1, P2):
+def get_alignment_row_col_dists(P1, P2):
     """
     For each point in the first path, record the distance
     of the closest point in the same row on the second path,
@@ -258,10 +258,10 @@ def getAlignmentRowColDists(P1, P2):
     dists: ndarray(2M+2N)
         The distances
     """
-    dists11 = getAlignmentRowDists(P1, P2)
-    dists12 = getAlignmentRowDists(P2, P1)
-    dists21 = getAlignmentRowDists(np.fliplr(P1), np.fliplr(P2))
-    dists22 = getAlignmentRowDists(np.fliplr(P2), np.fliplr(P1))
+    dists11 = get_alignment_row_dists(P1, P2)
+    dists12 = get_alignment_row_dists(P2, P1)
+    dists21 = get_alignment_row_dists(np.fliplr(P1), np.fliplr(P2))
+    dists22 = get_alignment_row_dists(np.fliplr(P2), np.fliplr(P1))
     return np.concatenate((dists11, dists12, dists21, dists22))
 
 def get_hist(dists):
@@ -276,7 +276,8 @@ def get_hist(dists):
             hist[d] = 1
     return hist
 
-def getInverseFnEquallySampled(t, x):
+def get_inverse_fn_equally_sampled(t, x):
+    import scipy.interpolate as interp
     N = len(t)
     t2 = np.linspace(np.min(x), np.max(x), N)
     try:
@@ -285,7 +286,7 @@ def getInverseFnEquallySampled(t, x):
     except:
         return t
 
-def getWarpDictionary(N, plotPaths = False):
+def get_warp_dictionary(N, plotPaths = False):
     t = np.linspace(0, 1, N)
     D = []
     #Polynomial
@@ -310,7 +311,7 @@ def getWarpDictionary(N, plotPaths = False):
         x = x - np.min(x)
         x = x/np.max(x)
         t = t/np.max(t)
-        x2 = getInverseFnEquallySampled(t, x)
+        x2 = get_inverse_fn_equally_sampled(t, x)
         x2 = x2 - np.min(x2)
         x2 = x2/np.max(x2)
         #D.append(x)
@@ -328,7 +329,7 @@ def getWarpDictionary(N, plotPaths = False):
         x = x - np.min(x)
         x = x/np.max(x)
         t = t/np.max(t)
-        x2 = getInverseFnEquallySampled(t, x)
+        x2 = get_inverse_fn_equally_sampled(t, x)
         x2 = x2 - np.min(x2)
         x2 = x2/np.max(x2)
         D.append(x)
@@ -339,7 +340,7 @@ def getWarpDictionary(N, plotPaths = False):
     D = np.array(D)
     return D
 
-def getWarpingPath(D, k, doPlot = False):
+def get_warping_path_dict(D, k, doPlot = False):
     """
     Return a warping path made up of k elements
     drawn from dictionary D
@@ -360,7 +361,8 @@ def getWarpingPath(D, k, doPlot = False):
         plt.title('Constructed Warping Path')
     return res
 
-def getInterpolatedEuclideanTimeSeries(X, t):
+def get_interpolated_euclidean_timeseries(X, t):
+    import scipy.interpolate as interp
     M = X.shape[0]
     d = X.shape[1]
     t0 = np.linspace(0, 1, M)
