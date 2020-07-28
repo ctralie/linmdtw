@@ -46,6 +46,7 @@ class TestDTWApprox:
         err1 = linmdtw.get_alignment_row_col_dists(path1, path2)
         err2 = linmdtw.get_alignment_row_col_dists(path1, path3)
         assert(np.mean(err1) <= np.mean(err2))
+        assert(linmdtw.get_path_cost(X, Y, path2) < linmdtw.get_path_cost(X, Y, path3))
 
     def test_mrmsdtw_refine(self):
         """
@@ -61,3 +62,4 @@ class TestDTWApprox:
         err1 = linmdtw.get_alignment_row_col_dists(path1, path2)
         err2 = linmdtw.get_alignment_row_col_dists(path1, path3)
         assert(np.mean(err1) <= np.mean(err2))
+        assert(linmdtw.get_path_cost(X, Y, path2) < linmdtw.get_path_cost(X, Y, path3))

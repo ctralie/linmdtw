@@ -133,7 +133,23 @@ def get_ssm(X):
     """
     return get_csm(X, X)
 
-
+def get_path_cost(X, Y, path):
+    """
+    Return the cost of a warping path that matches two Euclidean 
+    point clouds
+    Paramters
+    ---------
+    X: ndarray(M, d)
+        A d-dimensional Euclidean point cloud with M points
+    Y: ndarray(N, d)
+        A d-dimensional Euclidean point cloud with N points
+    P1: ndarray(K, 2)
+        Warping path
+    """
+    x = X[path[:, 0], :]
+    y = Y[path[:, 1], :]
+    ds = np.sqrt(np.sum((x-y)**2, 1))
+    return np.sum(ds)
 
 def make_path_strictly_increase(path):
     """
