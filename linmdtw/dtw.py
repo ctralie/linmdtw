@@ -1,13 +1,12 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import scipy.io as sio
-from alignmenttools import get_diag_len, get_diag_indices, update_alignment_metadata
+from .alignmenttools import get_diag_len, get_diag_indices, update_alignment_metadata
+import warnings
 
-def dtw(X, Y, debug=False):
+def dtw_brute(X, Y, debug=False):
     """
-    Compute dynamic time warping between two time-ordered
-    point clouds in Euclidean space, using cython on the 
-    backend
+    Compute brute force dynamic time warping between two 
+    time-ordered point clouds in Euclidean space, using 
+    cython on the backend
     Parameters
     ----------
     X: ndarray(M, d)
@@ -18,13 +17,20 @@ def dtw(X, Y, debug=False):
         Whether to keep track of debugging information
     """
     from dynseqalign import DTW
+    if not X.dtype == np.float32:
+        warnings.warn("X is not 32-bit, so creating 32-bit version")
+        X = np.array(X, dtype=np.float32)
+    if not Y.dtype == np.float32:
+        warnings.warn("Y is not 32-bit, so creating 32-bit version")
+        Y = np.array(Y, dtype=np.float32)
     return DTW(X, Y, int(debug))
 
-def dtw_backtrace(X, Y, debug=False):
+def dtw_brute_backtrace(X, Y, debug=False):
     """
     Compute dynamic time warping between two time-ordered
     point clouds in Euclidean space, using cython on the 
-    backend
+    backend.  Then, trace back through the matrix of backpointers
+    to extract an alignment path
     Parameters
     ----------
     X: ndarray(M, d)
@@ -33,8 +39,9 @@ def dtw_backtrace(X, Y, debug=False):
         A d-dimensional Euclidean point cloud with N points
     debug: boolean
         Whether to keep track of debugging information
+    
     """
-    res = dtw(X, Y, debug)
+    res = dtw_brute(X, Y, debug)
     res['P'] = np.asarray(res['P'])
     if debug:
         for key in ['U', 'L', 'UL', 'S']:
@@ -157,7 +164,7 @@ def dtw_diag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fa
         res['S'] = S
     return res
 
-def linmdtw(X, Y, box = None, min_dim = 500, dtw_diag_fn = dtw_diag, metadata = None):
+def linmdtw(X, Y, box = None, min_dim = 500, do_gpu = True, metadata = None):
     """
     Linear memory exact, parallelizable DTW
     Parameters
@@ -169,13 +176,30 @@ def linmdtw(X, Y, box = None, min_dim = 500, dtw_diag_fn = dtw_diag, metadata = 
     min_dim: int
         If one of the dimensions of the rectangular region
         to the left or to the right is less than this number,
-        then switch to brute force
-    DTWDiag_fn: function handle
-        A function handle to the function used to compute diagonal-based
-        DTW, so that the GPU version can be easily swapped in
+        then switch to brute force CPU
+    do_gpu: boolean
+        If true, use the GPU diagonal DTW function as a subroutine.
+        Otherwise, use the CPU version.  Both are linear memory, but 
+        the GPU will go faster for larger synchronization problems
     metadata: dictionary
         A dictionary for storing information about the computation
     """
+    if not X.dtype == np.float32:
+        warnings.warn("X is not 32-bit, so creating 32-bit version")
+        X = np.array(X, dtype=np.float32)
+    if not Y.dtype == np.float32:
+        warnings.warn("Y is not 32-bit, so creating 32-bit version")
+        Y = np.array(Y, dtype=np.float32)
+    dtw_diag_fn = dtw_diag
+    if do_gpu:
+        from .dtwgpu import DTW_GPU_Initialized, DTW_GPU_Failed, init_gpu, dtw_diag_gpu
+        if not DTW_GPU_Initialized:
+            init_gpu()
+        if DTW_GPU_Failed:
+            warnings.warn("Falling back to CPU")
+            do_gpu = False
+        else:
+            dtw_diag_fn = dtw_diag_gpu
     if not box:
         box = [0, X.shape[0]-1, 0, Y.shape[0]-1]
     M = box[1]-box[0]+1
@@ -185,7 +209,7 @@ def linmdtw(X, Y, box = None, min_dim = 500, dtw_diag_fn = dtw_diag, metadata = 
     if M < min_dim or N < min_dim:
         if metadata:
             metadata['totalCells'] += M*N
-        path = dtw_backtrace(X[box[0]:box[1]+1, :], Y[box[2]:box[3]+1, :])
+        path = dtw_brute_backtrace(X[box[0]:box[1]+1, :], Y[box[2]:box[3]+1, :])
         for p in path:
             p[0] += box[0]
             p[1] += box[2]
@@ -229,12 +253,12 @@ def linmdtw(X, Y, box = None, min_dim = 500, dtw_diag_fn = dtw_diag, metadata = 
     # Recursively compute left paths
     left_path = []
     box_left = [box[0], min_idxs[0], box[2], min_idxs[1]]
-    left_path = linmdtw(X, Y, box_left, min_dim, dtw_diag_fn, metadata)
+    left_path = linmdtw(X, Y, box_left, min_dim, do_gpu, metadata)
 
     # Recursively compute right paths
     right_path = []
     box_right = [min_idxs[0], box[1], min_idxs[1], box[3]]
-    right_path = linmdtw(X, Y, box_right, min_dim, dtw_diag_fn, metadata)
+    right_path = linmdtw(X, Y, box_right, min_dim, do_gpu, metadata)
     
     return left_path + right_path[1::]
 

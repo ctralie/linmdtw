@@ -4,7 +4,7 @@ import scipy.io as sio
 from scipy import sparse
 import time
 import dynseqalign
-from dtw import dtw_backtrace, linmdtw
+from .dtw import dtw_brute_backtrace, linmdtw
 
 def fill_block(A, p, radius, val):
     """
@@ -53,7 +53,7 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
     X = np.ascontiguousarray(X)
     Y = np.ascontiguousarray(Y)
     if M < radius or N < radius:
-        return dtw_backtrace(X, Y)
+        return dtw_brute_backtrace(X, Y)
     # Recursive step
     path = fastdtw(X[0::2, :], Y[0::2, :], radius, debug, level+1, do_plot)
     if type(path) is dict:
@@ -172,13 +172,13 @@ def mrmsdtw(X, Y, tau, debug=False, refine = True):
     if M*N < tau:
         # If the matrix is already within the memory bounds, simply
         # return DTW
-        return dtw_backtrace(X, Y)
+        return dtw_brute_backtrace(X, Y)
 
     ## Step 1: Perform DTW at the coarse level
     # Figure out the subsampling factor for the
     # coarse alignment based on memory requirements
     d = int(np.ceil(np.sqrt(M*N/tau)))
-    anchors = dtw_backtrace(np.ascontiguousarray(X[0::d, :]), 
+    anchors = dtw_brute_backtrace(np.ascontiguousarray(X[0::d, :]), 
                   np.ascontiguousarray(Y[0::d, :]))
     anchors = [[0, 0]] + anchors
     anchors = (np.array(anchors)*d).tolist()
