@@ -72,7 +72,7 @@ def dtw_brute_backtrace(X, Y, debug=False):
     """
     res = dtw_brute(X, Y, debug)
     res['P'] = np.asarray(res['P'])
-    if debug:
+    if debug: # pragma: no cover
         for key in ['U', 'L', 'UL', 'S']:
             res[key] = np.asarray(res[key])
     i = X.shape[0]-1
@@ -85,7 +85,7 @@ def dtw_brute_backtrace(X, Y, debug=False):
         j += s[1]
         path.append([i, j])
     path.reverse()
-    if debug:
+    if debug: # pragma: no cover
         res['path'] = path
         return res
     return path
@@ -137,7 +137,7 @@ def dtw_diag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fa
     L = np.zeros_like(U)
     UL = np.zeros_like(U)
     S = np.zeros_like(U)
-    if debug:
+    if debug: # pragma: no cover
         U = np.zeros((M, N), dtype=np.float32)
         L = np.zeros_like(U)
         UL = np.zeros_like(U)
@@ -186,7 +186,7 @@ def dtw_diag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fa
         csm1len = csm2len
         csm2len = temp
     res['cost'] = d2[0] + csm2[0]
-    if debug:
+    if debug: # pragma: no cover
         res['U'] = U
         res['L'] = L
         res['UL'] = UL

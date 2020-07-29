@@ -28,6 +28,7 @@ class TestDTW:
             linmdtw.dtw_brute_backtrace(X, X)
 
     def test_cpu_vs_gpu(self):
+        import time
         N = 2000
         t1 = np.linspace(0, 1, N)
         t2 = t1**2
@@ -43,7 +44,8 @@ class TestDTW:
         path2 = np.array(path2)
         err = linmdtw.get_alignment_row_col_dists(path1, path2)
         assert(np.mean(err) < 1)
-        path3 = linmdtw.linmdtw(X, Y, do_gpu=False)
+        metadata = {'totalCells':0, 'M':X.shape[0], 'N':Y.shape[0], 'timeStart':time.time()}
+        path3 = linmdtw.linmdtw(X, Y, do_gpu=False, metadata=metadata)
         path3 = np.array(path3)
         err = linmdtw.get_alignment_row_col_dists(path2, path3)
         assert(np.mean(err) < 1)

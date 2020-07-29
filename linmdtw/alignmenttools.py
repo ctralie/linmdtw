@@ -97,7 +97,7 @@ def update_alignment_metadata(metadata = None, newcells = 0):
                 if 'timeStart' in metadata:
                     print("Elapsed time: {}".format(time.time()-metadata['timeStart']))
 
-def get_csm(X, Y):
+def get_csm(X, Y): # pragma: no cover
     """
     Return the Euclidean cross-similarity matrix between X and Y
     Paramters

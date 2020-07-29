@@ -104,7 +104,7 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
     P = np.zeros(I.size, dtype=np.int32) # Path pointer matrix
     dynseqalign.FastDTW_DynProg_Step(X, Y, I, J, left, up, diag, S, P)
     P = sparse.coo_matrix((P, (I, J)), shape=(M, N)).tocsr()
-    if debug or do_plot:
+    if debug or do_plot: # pragma: no cover
         S = sparse.coo_matrix((S, (I, J)), shape=(M, N)).tocsr()
     
     # Step 4: Do backtracing
@@ -119,7 +119,7 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
         path.append([i, j])
     path.reverse()
     
-    if do_plot:
+    if do_plot: # pragma: no cover
         plt.figure(figsize=(8, 8))
         plt.imshow(S.toarray())
         path = np.array(path)
@@ -127,7 +127,7 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
         plt.title("Level {}".format(level))
         plt.savefig("%i.png"%level, bbox_inches='tight')
 
-    if debug:
+    if debug: # pragma: no cover
         return {'path':path, 'S':S, 'P':P}
     else:
         return path
