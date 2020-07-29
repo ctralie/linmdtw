@@ -77,7 +77,10 @@ setup(
     ext_modules=cythonize(ext_modules, include_path=['linmdtw']),
     install_requires=[
         'Cython',
-        'numpy'
+        'numpy',
+        'matplotlib',
+        'scipy',
+        'numba'
     ],
     extras_require={
         'testing': [ # `pip install -e ".[testing]"``
@@ -97,10 +100,11 @@ setup(
         'Intended Audience :: Healthcare Industry',
         'Topic :: Scientific/Engineering :: Information Analysis',
         'Topic :: Scientific/Engineering :: Mathematics',
+        'Topic :: Multimedia :: Sound/Audio :: Analysis',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8'
     ],
-    keywords='dynamic time warping, fast dtw, synchronization'
+    keywords='dynamic time warping, alignment, fast dtw, synchronization, time series, music information retrieval, audio analysis'
 )
