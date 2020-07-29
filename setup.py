@@ -70,7 +70,7 @@ setup(
     description="A linear memory, exact, parallelizable algorithm for dynamic time warping in arbitrary Euclidean spaces",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author="Anonymous",
+    author="Chris Tralie",
     author_email="ctralie@alumni.princeton.edu",
     license='Apache2',
     packages=['linmdtw'],

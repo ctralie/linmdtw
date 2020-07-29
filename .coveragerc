@@ -1,2 +1,5 @@
 [run]
 branch = True
+omit = 
+    linmdtw/audiotools.py
+    linmdtw/dtwgpu.py
