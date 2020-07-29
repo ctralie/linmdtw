@@ -117,7 +117,7 @@ def get_csm(X, Y):
     C[C < 0] = 0
     return np.sqrt(C)
 
-def get_ssm(X):
+def get_ssm(X): # pragma: no cover
     """
     Return the SSM between all rows of a time-ordered Euclidean point cloud X
     Paramters
@@ -149,7 +149,7 @@ def get_path_cost(X, Y, path):
     ds = np.sqrt(np.sum((x-y)**2, 1))
     return np.sum(ds)
 
-def make_path_strictly_increase(path):
+def make_path_strictly_increase(path): # pragma: no cover
     """
     Given a warping path, remove all rows that do not
     strictly increase from the row before
@@ -163,7 +163,7 @@ def make_path_strictly_increase(path):
             toKeep[i] = 0
     return path[toKeep == 1, :]
 
-def get_alignment_area_dist(P1, P2, doPlot = False):
+def get_alignment_area_dist(P1, P2, doPlot = False): # pragma: no cover
     """
     Compute area-based alignment error.  Assume that the 
     warping paths are on the same grid
@@ -203,7 +203,7 @@ def get_alignment_area_dist(P1, P2, doPlot = False):
         plt.title("Dist = %g"%dist)
     return dist
 
-def get_alignment_cell_dists(P1, P2):
+def get_alignment_cell_dists(P1, P2): # pragma: no cover
     """
     Return the L1 distances between each point on the warping path
     P2 to the closest point on the warping path P1
@@ -280,7 +280,7 @@ def get_alignment_row_col_dists(P1, P2):
     dists22 = get_alignment_row_dists(np.fliplr(P2), np.fliplr(P1))
     return np.concatenate((dists11, dists12, dists21, dists22))
 
-def get_hist(dists):
+def get_hist(dists): # pragma: no cover
     """
     Return a histogram of distances
     """
@@ -292,7 +292,7 @@ def get_hist(dists):
             hist[d] = 1
     return hist
 
-def get_inverse_fn_equally_sampled(t, x):
+def get_inverse_fn_equally_sampled(t, x): # pragma: no cover
     import scipy.interpolate as interp
     N = len(t)
     t2 = np.linspace(np.min(x), np.max(x), N)
@@ -302,7 +302,7 @@ def get_inverse_fn_equally_sampled(t, x):
     except:
         return t
 
-def get_warp_dictionary(N, plotPaths = False):
+def get_warp_dictionary(N, plotPaths = False): # pragma: no cover
     t = np.linspace(0, 1, N)
     D = []
     #Polynomial
@@ -362,7 +362,7 @@ def get_warp_dictionary(N, plotPaths = False):
     D = np.array(D)
     return D
 
-def get_warping_path_dict(D, k, doPlot = False):
+def get_warping_path_dict(D, k, doPlot = False): # pragma: no cover
     """
     Return a warping path made up of k elements
     drawn from dictionary D
@@ -384,7 +384,7 @@ def get_warping_path_dict(D, k, doPlot = False):
         plt.title('Constructed Warping Path')
     return res
 
-def get_interpolated_euclidean_timeseries(X, t):
+def get_interpolated_euclidean_timeseries(X, t): # pragma: no cover
     import scipy.interpolate as interp
     M = X.shape[0]
     d = X.shape[1]
