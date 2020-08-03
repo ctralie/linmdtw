@@ -2,6 +2,54 @@ import numpy as np
 from .alignmenttools import get_diag_len, get_diag_indices, update_alignment_metadata
 import warnings
 
+def check_euclidean_inputs(X, Y):
+    """
+    Check the input of two time series in Euclidean spaces, which
+    are to be warped to each other.  They must satisfy:
+    1. They are in the same dimension space
+    2. They are 32-bit
+    3. They are in C-contiguous order
+    
+    If #2 or #3 are not satisfied, automatically fix them and
+    warn the user.
+    Furthermore, warn the user if X or Y has more columns than rows,
+    since the convention is that points are along rows and dimensions
+    are along columns
+    
+    Parameters
+    ----------
+    X: ndarray(M, d)
+        The first time series
+    Y: ndarray(N, d)    
+        The second time series
+    
+    Returns
+    -------
+    X: ndarray(M, d)
+        The first time series, possibly copied in memory to be 32-bit, C-contiguous
+    Y: ndarray(N, d)    
+        The second time series, possibly copied in memory to be 32-bit, C-contiguous
+    """
+    if X.shape[1] != Y.shape[1]:
+        raise ValueError("The input time series are not in the same dimension space")
+    if X.shape[0] < X.shape[1]:
+        warnings.warn("X {} has more columns than rows; did you mean to transpose?".format(X.shape))
+    if Y.shape[0] < Y.shape[1]:
+        warnings.warn("Y {} has more columns than rows; did you mean to transpose?".format(Y.shape))
+    if not X.dtype == np.float32:
+        warnings.warn("X is not 32-bit, so creating 32-bit version")
+        X = np.array(X, dtype=np.float32)
+    if not X.flags['C_CONTIGUOUS']:
+        warnings.warn("X is not C-contiguous; creating a copy that is C-contiguous")
+        X = X.copy(order='C')
+    if not Y.dtype == np.float32:
+        warnings.warn("Y is not 32-bit, so creating 32-bit version")
+        Y = np.array(Y, dtype=np.float32)
+    if not Y.flags['C_CONTIGUOUS']:
+        warnings.warn("Y is not C-contiguous; creating a copy that is C-contiguous")
+        Y = Y.copy(order='C')
+    return X, Y
+
 def dtw_brute(X, Y, debug=False):
     """
     Compute brute force dynamic time warping between two 
@@ -29,16 +77,7 @@ def dtw_brute(X, Y, debug=False):
     }
     """
     from dynseqalign import DTW
-    if not X.dtype == np.float32:
-        warnings.warn("X is not 32-bit, so creating 32-bit version")
-        X = np.array(X, dtype=np.float32)
-    if not Y.dtype == np.float32:
-        warnings.warn("Y is not 32-bit, so creating 32-bit version")
-        Y = np.array(Y, dtype=np.float32)
-    if X.shape[0] < X.shape[1]:
-        warnings.warn("X {} has more columns than rows; did you mean to transpose?".format(X.shape))
-    if Y.shape[0] < Y.shape[1]:
-        warnings.warn("Y {} has more columns than rows; did you mean to transpose?".format(Y.shape))
+    X, Y = check_euclidean_inputs(X, Y)
     return DTW(X, Y, int(debug))
 
 def dtw_brute_backtrace(X, Y, debug=False):
@@ -88,6 +127,7 @@ def dtw_brute_backtrace(X, Y, debug=False):
         j += s[1]
         path.append([i, j])
     path.reverse()
+    path = np.array(path, dtype=int)
     if debug: # pragma: no cover
         res['path'] = path
         return res
@@ -224,16 +264,7 @@ def linmdtw(X, Y, box=None, min_dim=500, do_gpu=True, metadata=None):
     path: ndarray(K, 2)
         The optimal warping path
     """
-    if not X.dtype == np.float32:
-        warnings.warn("X is not 32-bit, so creating 32-bit version")
-        X = np.array(X, dtype=np.float32)
-    if not Y.dtype == np.float32:
-        warnings.warn("Y is not 32-bit, so creating 32-bit version")
-        Y = np.array(Y, dtype=np.float32)
-    if X.shape[0] < X.shape[1]:
-        warnings.warn("X {} has more columns than rows; did you mean to transpose?".format(X.shape))
-    if Y.shape[0] < Y.shape[1]:
-        warnings.warn("Y {} has more columns than rows; did you mean to transpose?".format(Y.shape))
+    X, Y = check_euclidean_inputs(X, Y)
     dtw_diag_fn = dtw_diag
     if do_gpu:
         from .dtwgpu import DTW_GPU_Initialized, init_gpu, dtw_diag_gpu
@@ -305,6 +336,6 @@ def linmdtw(X, Y, box=None, min_dim=500, do_gpu=True, metadata=None):
     box_right = [min_idxs[0], box[1], min_idxs[1], box[3]]
     right_path = linmdtw(X, Y, box_right, min_dim, do_gpu, metadata)
     
-    return left_path + right_path[1::]
+    return np.concatenate((left_path, right_path[1::, :]), axis=0)
 
     
