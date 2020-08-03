@@ -87,7 +87,7 @@ setup(
             'pytest'  
         ],
         'docs': [ # `pip install -e ".[docs]"`
-            'sktda_docs_config'
+            'linmdtw_docs_config'
         ],
         'examples': []
     },
