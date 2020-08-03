@@ -178,6 +178,119 @@ def make_path_strictly_increase(path): # pragma: no cover
             toKeep[i] = 0
     return path[toKeep == 1, :]
 
+def refine_warping_path(path):
+    """
+    An implementation of the technique in section 4 of 
+    "Refinement Strategies for Music Synchronization" by Ewert and Müller
+
+    Parameters
+    ----------
+    path: ndarray(K, 2)
+        A warping path
+    
+    Returns
+    -------
+    path_refined: ndarray(N >= K, 2)
+        A refined set of correspondences
+    """
+    N = path.shape[0]
+    ## Step 1: Identify all vertical and horizontal segments
+    vert_horiz = []
+    i = 0
+    while i < N-1:
+        if path[i+1, 0] == path[i, 0]:
+            # Vertical line
+            j = i+1
+            while path[j, 0] == path[i, 0] and j < N-1:
+                j += 1
+            if j < N-1:
+                vert_horiz.append({'type':'vert', 'i':i, 'j':j-1})
+                i = j-1
+            else:
+                vert_horiz.append({'type':'vert', 'i':i, 'j':j})
+                i = j
+        elif path[i+1, 1] == path[i, 1]:
+            # Horizontal line
+            j = i+1
+            while path[j, 1] == path[i, 1] and j < N-1:
+                j += 1
+            if j < N-1:
+                vert_horiz.append({'type':'horiz', 'i':i, 'j':j-1})
+                i = j-1
+            else:
+                vert_horiz.append({'type':'horiz', 'i':i, 'j':j})
+                i = j
+        else:
+            i += 1
+    
+    ## Step 2: Compute local densities
+    x1 = []
+    density = []
+    i = 0
+    vhi = 0
+    while i < N:
+        inext = i+1
+        if vhi < len(vert_horiz) and vert_horiz[vhi]['i'] == i: # This is a vertical or horizontal segment
+            v = vert_horiz[vhi]
+            n_seg = v['j']-v['i']+1
+            x1i = []
+            densityi = []
+            n_seg_prev = 0
+            n_seg_next = 0
+            if vhi > 0:
+                v2 = vert_horiz[vhi-1]
+                if i == v2['j']:
+                    # First segment is at a corner
+                    n_seg_prev = v2['j']-v2['i']+1
+            if vhi < len(vert_horiz) - 1:
+                v2 = vert_horiz[vhi+1]
+                if v['j'] == v2['i']:
+                    # Last segment is a corner
+                    n_seg_next = v2['j']-v2['i']+1
+            # Case 1: Vertical Segment
+            if v['type'] == 'vert':
+                x1i = [path[i, 0] + k/n_seg for k in range(n_seg+1)]
+                densityi = [n_seg]*(n_seg+1)
+                if n_seg_prev > 0:
+                    densityi[0] = n_seg/n_seg_prev
+                if n_seg_next > 0:
+                    densityi[-2] = n_seg/n_seg_next
+                    densityi[-1] = n_seg/n_seg_next
+                    inext = v['j']
+                else:
+                    inext = v['j']+1
+            # Case 2: Horizontal Segment
+            else:  
+                x1i = [path[i, 0] + k for k in range(n_seg)]
+                densityi = [1/n_seg]*n_seg
+                if n_seg_prev > 0:
+                    x1i = x1i[1::]
+                    densityi = densityi[1::]
+                if n_seg_next > 0:
+                    inext = v['j']
+                else:
+                    inext = v['j']+1
+            x1 += x1i
+            density += densityi
+            vhi += 1
+        else:
+            # This is a diagonal segment
+            x1 += [path[i, 0], path[i, 0]+1]
+            density += [1, 1]
+        i = inext
+    
+    ## Step 3: Integrate densities
+    x1 = np.array(x1)
+    density = np.array(density)
+    path_refined = [[0, 0]]
+    j = 0
+    for i in range(1, x1.size):
+        if x1[i] > x1[i-1]:
+            j += (x1[i]-x1[i-1])*density[i-1]
+            path_refined.append([x1[i], j])
+    path_refined = np.array(path_refined)
+    return path_refined
+
 def get_alignment_area_dist(P1, P2, do_plot = False):
     """
     Compute area-based alignment error between two warping paths.
