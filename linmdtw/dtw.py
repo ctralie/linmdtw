@@ -7,6 +7,7 @@ def dtw_brute(X, Y, debug=False):
     Compute brute force dynamic time warping between two 
     time-ordered point clouds in Euclidean space, using 
     cython on the backend
+
     Parameters
     ----------
     X: ndarray(M, d)
@@ -15,6 +16,7 @@ def dtw_brute(X, Y, debug=False):
         A d-dimensional Euclidean point cloud with N points
     debug: boolean
         Whether to keep track of debugging information
+    
     Returns
     -------
     {
@@ -45,6 +47,7 @@ def dtw_brute_backtrace(X, Y, debug=False):
     point clouds in Euclidean space, using cython on the 
     backend.  Then, trace back through the matrix of backpointers
     to extract an alignment path
+
     Parameters
     ----------
     X: ndarray(M, d)
@@ -94,6 +97,7 @@ def dtw_brute_backtrace(X, Y, debug=False):
 def dtw_diag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=False, metadata=None):
     """
     A CPU version of linear memory diagonal DTW
+
     Parameters
     ----------
     X: ndarray(M, d)
@@ -112,6 +116,7 @@ def dtw_diag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fa
         Whether to save the accumulated cost matrix
     metadata: dictionary
         A dictionary for storing information about the computation
+    
     Returns
     -------
     {
@@ -193,9 +198,10 @@ def dtw_diag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fa
         res['S'] = S
     return res
 
-def linmdtw(X, Y, box = None, min_dim = 500, do_gpu = True, metadata = None):
+def linmdtw(X, Y, box=None, min_dim=500, do_gpu=True, metadata=None):
     """
     Linear memory exact, parallelizable DTW
+
     Parameters
     ----------
     X: ndarray(N1, d)
@@ -212,6 +218,7 @@ def linmdtw(X, Y, box = None, min_dim = 500, do_gpu = True, metadata = None):
         the GPU will go faster for larger synchronization problems
     metadata: dictionary
         A dictionary for storing information about the computation
+    
     Returns
     -------
     path: ndarray(K, 2)

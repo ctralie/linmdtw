@@ -9,6 +9,7 @@ from .dtw import dtw_brute_backtrace, linmdtw
 def fill_block(A, p, radius, val):
     """
     Fill a square block with values
+
     Parameters
     ----------
     A: ndarray(M, N) or sparse(M, N)
@@ -29,8 +30,8 @@ def fill_block(A, p, radius, val):
 def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
     """
     An implementation of [1]
-    [1] FastDTW: Toward Accurate Dynamic Time Warping in Linear Time and Space
-                Stan Salvador and Philip Chan
+    [1] FastDTW: Toward Accurate Dynamic Time Warping in Linear Time and Space. Stan Salvador and Philip Chan
+    
     Parameters
     ----------
     X: ndarray(M, d)
@@ -46,6 +47,7 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
         An int for keeping track of the level of recursion
     do_plot: boolean
         Whether to plot the warping path at each level and save to image files
+    
     Returns
     -------
     path: ndarray(K, 2)
@@ -135,12 +137,14 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
 def get_box_area(a1, a2):
     """
     Get the area of a box specified by two anchors
+    
     Parameters
     ----------
     a1: list(2)
         Row/column of first anchor
     a2: list(2)
         Row/column of second anchor
+    
     Returns
     -------
     Area of box determined by these two anchors
@@ -155,6 +159,7 @@ def mrmsdtw(X, Y, tau, debug=False, refine=True):
     multiscale DTW technique from [2]
     [2] "Memory-Restricted Multiscale Dynamic Time Warping"
     Thomas Praetzlich, Jonathan Driedger and Meinard Mueller
+    
     Parameters
     ----------
     X: ndarray(M, d)
@@ -168,6 +173,7 @@ def mrmsdtw(X, Y, tau, debug=False, refine=True):
         Whether to keep track of debugging information
     refine: boolean
         Whether to do refinement with the "white anchors"
+    
     Returns
     -------
     path: ndarray(K, 2)

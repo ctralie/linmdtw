@@ -4,6 +4,7 @@ from numba import jit
 def get_diag_len(box, k):
     """
     Return the number of elements in this particular diagonal
+
     Parameters
     ----------
     MTotal: int
@@ -35,6 +36,7 @@ def get_diag_indices(MTotal, NTotal, k, box = None, reverse=False):
     """
     Compute the indices on a diagonal into indices on an accumulated
     distance matrix
+
     Parameters
     ----------
     MTotal: int
@@ -77,6 +79,7 @@ def update_alignment_metadata(metadata = None, newcells = 0):
     """
     Add new amount of cells to the total cells processed,
     and print out a percentage point if there's been progress
+
     Parameters
     ----------
     newcells: int
@@ -100,16 +103,19 @@ def update_alignment_metadata(metadata = None, newcells = 0):
 def get_csm(X, Y): # pragma: no cover
     """
     Return the Euclidean cross-similarity matrix between X and Y
-    Paramters
+
+    Parameters
     ---------
     X: ndarray(M, d)
         A d-dimensional Euclidean point cloud with M points
     Y: ndarray(N, d)
         A d-dimensional Euclidean point cloud with N points
+    
     Returns
     -------
     D: ndarray(M, N)
         The cross-similarity matrix
+    
     """
     XSqr = np.sum(X**2, 1)
     YSqr = np.sum(Y**2, 1)
@@ -120,7 +126,8 @@ def get_csm(X, Y): # pragma: no cover
 def get_ssm(X): # pragma: no cover
     """
     Return the SSM between all rows of a time-ordered Euclidean point cloud X
-    Paramters
+
+    Parameters
     ---------
     X: ndarray(M, d)
         A d-dimensional Euclidean point cloud with M points
@@ -135,7 +142,8 @@ def get_path_cost(X, Y, path):
     """
     Return the cost of a warping path that matches two Euclidean 
     point clouds
-    Paramters
+
+    Parameters
     ---------
     X: ndarray(M, d)
         A d-dimensional Euclidean point cloud with M points
@@ -167,11 +175,12 @@ def get_alignment_area_dist(P1, P2, doPlot = False): # pragma: no cover
     """
     Compute area-based alignment error.  Assume that the 
     warping paths are on the same grid
+
     Parameters
     ----------
-    ndarray(M, 2) pP1
+    ndarray(M, 2: pP1
         First warping path
-    ndarray(N, 2) pP2
+    ndarray(N, 2): pP2
         Second warping path
     doPlot: boolean
         Whether to draw a plot showing the enclosed area
@@ -207,6 +216,7 @@ def get_alignment_cell_dists(P1, P2): # pragma: no cover
     """
     Return the L1 distances between each point on the warping path
     P2 to the closest point on the warping path P1
+
     Parameters
     ----------
     P1: ndarray(M, 2)
@@ -230,6 +240,7 @@ def get_alignment_row_dists(P1, P2):
     """
     For each point in the first path, record the distance
     of the closest point in the same row on the second path
+
     Parameters
     ----------
     P1: ndarray(M, 2)
@@ -263,6 +274,7 @@ def get_alignment_row_col_dists(P1, P2):
     For each point in the first path, record the distance
     of the closest point in the same row on the second path,
     and vice versa.  Then repeat this along the columns
+
     Parameters
     ----------
     P1: ndarray(M, 2)
@@ -279,18 +291,6 @@ def get_alignment_row_col_dists(P1, P2):
     dists21 = get_alignment_row_dists(np.fliplr(P1), np.fliplr(P2))
     dists22 = get_alignment_row_dists(np.fliplr(P2), np.fliplr(P1))
     return np.concatenate((dists11, dists12, dists21, dists22))
-
-def get_hist(dists): # pragma: no cover
-    """
-    Return a histogram of distances
-    """
-    hist = {}
-    for d in dists:
-        if d in hist:
-            hist[d] += 1
-        else:
-            hist[d] = 1
-    return hist
 
 def get_inverse_fn_equally_sampled(t, x): # pragma: no cover
     import scipy.interpolate as interp
