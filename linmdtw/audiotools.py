@@ -7,12 +7,14 @@ def load_audio(filename, sr = 44100):
     Load an audio waveform from a file.  Try to use ffmpeg
     to convert it to a .wav file so scipy's fast wavfile loader
     can work.  Otherwise, fall back to the slower librosa
+
     Parameters
     ----------
     filename: string
         Path to audio file to load
     sr: int
         Sample rate to use
+    
     Returns
     -------
     y: ndarray(N)
@@ -40,9 +42,37 @@ def load_audio(filename, sr = 44100):
         import librosa
         return librosa.load(filename, sr=sr)
 
+    
+def save_audio(x, sr, outprefix):
+    """
+    Save audio to a file
+
+    Parameters
+    ----------
+    x: ndarray(N, 2)
+        Stereo audio to save
+    sr: int
+        Sample rate of audio to save
+    outprefix: string
+        Use this as the prefix of the file to which to save audio
+    """
+    from scipy.io import wavfile
+    import subprocess
+    import os
+    wavfilename = "{}.wav".format(outprefix)
+    mp3filename = "{}.mp3".format(outprefix)
+    if os.path.exists(wavfilename):
+        os.remove(wavfilename)
+    if os.path.exists(mp3filename):
+        os.remove(mp3filename)
+    wavfile.write(wavfilename, sr, x)
+    subprocess.call(["ffmpeg", "-i", wavfilename, mp3filename])
+    os.remove(wavfilename)
+
 def get_DLNC0(x, sr, hop_length, lag=10, do_plot=False):
     """
     Compute decaying locally adaptive normalize C0 (DLNC0) features
+
     Parameters
     ----------
     x: ndarray(N)
@@ -53,6 +83,7 @@ def get_DLNC0(x, sr, hop_length, lag=10, do_plot=False):
         Hop size between windows
     lag: int
         Number of lags to include
+    
     Returns
     -------
     X: ndarray(n_win, 12)
@@ -111,6 +142,7 @@ def get_DLNC0(x, sr, hop_length, lag=10, do_plot=False):
 def get_mixed_DLNC0_CENS(x, sr, hop_length, lam=0.1):
     """
     Concatenate DLNC0 to CENS
+
     Parameters
     ----------
     x: ndarray(N)
@@ -121,6 +153,7 @@ def get_mixed_DLNC0_CENS(x, sr, hop_length, lam=0.1):
         Hop size between windows
     lam: float
         The coefficient in front of the CENS features
+    
     Returns
     -------
     X: ndarray(n_win, 24)
@@ -135,6 +168,7 @@ def get_mixed_DLNC0_CENS(x, sr, hop_length, lam=0.1):
 def get_mfcc_mod(x, sr, hop_length, n_mfcc=120, drop=20, n_fft = 2048):
     """
     Compute the mfcc_mod features, as described in Gadermaier 2019
+
     Parameters
     ----------
     x: ndarray(N)
@@ -149,6 +183,7 @@ def get_mfcc_mod(x, sr, hop_length, n_mfcc=120, drop=20, n_fft = 2048):
         Index under which to ignore coefficients
     n_fft: int
         Number of fft points to use in each window
+    
     Returns
     -------
     X: ndarray(n_win, n_mfcc-drop)
@@ -160,10 +195,11 @@ def get_mfcc_mod(x, sr, hop_length, n_mfcc=120, drop=20, n_fft = 2048):
     X = X[drop::, :].T
     return X
 
-def stretch_audio(x1, x2, sr, path, hop_length):
+def stretch_audio(x1, x2, sr, path, hop_length, refine = True):
     """
     Wrap around pyrubberband to warp one audio stream
     to another, according to some warping path
+
     Parameters
     ----------
     x1: ndarray(M)
@@ -176,21 +212,26 @@ def stretch_audio(x1, x2, sr, path, hop_length):
         Warping path, in units of windows
     hop_length: int
         The hop length between windows
+    refine: boolean
+        Whether to refine the warping path before alignment
+    
     Returns
     -------
     x3: ndarray(N, 2)
         The synchronized audio.  x2 is in the right channel,
         and x1 stretched to x2 is in the left channel
     """
-    from .alignmenttools import make_path_strictly_increase
+    from .alignmenttools import refine_warping_path
     import pyrubberband as pyrb
     print("Stretching...")
-    path = make_path_strictly_increase(path)
-    path *= hop_length
-    path = [(row[0], row[1]) for row in path]
-    path.append((x1.size, x2.size))
+    path_final = path.copy()
+    if refine:
+        path_final = refine_warping_path(path_final)
+    path_final *= hop_length
+    path_final = [(row[0], row[1]) for row in path_final if row[0] < x1.size and row[1] < x2.size]
+    path_final.append((x1.size, x2.size))
     x3 = np.zeros((x2.size, 2))
     x3[:, 1] = x2
-    x1_stretch = pyrb.timemap_stretch(x1, sr, path)
+    x1_stretch = pyrb.timemap_stretch(x1, sr, path_final)
     x3[:, 0] = x1_stretch
     return x3

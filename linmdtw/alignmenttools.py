@@ -95,10 +95,13 @@ def update_alignment_metadata(metadata = None, newcells = 0):
             before = np.floor(50*metadata['totalCells']/denom)
             metadata['totalCells'] += newcells
             after = np.floor(50*metadata['totalCells']/denom)
-            if after > before:
-                print("Parallel Alignment {}% ".format(before), end='')
+            perc = 1
+            if 'perc' in metadata:
+                perc = metadata['perc']
+            if after > before and after % perc == 0:
+                print("Parallel Alignment {}% ".format(after), end='')
                 if 'timeStart' in metadata:
-                    print("Elapsed time: {}".format(time.time()-metadata['timeStart']))
+                    print("Elapsed time: %.3g"%(time.time()-metadata['timeStart']))
 
 def get_csm(X, Y): # pragma: no cover
     """
@@ -224,7 +227,7 @@ def refine_warping_path(path):
             i += 1
     
     ## Step 2: Compute local densities
-    x1 = []
+    xidx = []
     density = []
     i = 0
     vhi = 0
@@ -233,7 +236,7 @@ def refine_warping_path(path):
         if vhi < len(vert_horiz) and vert_horiz[vhi]['i'] == i: # This is a vertical or horizontal segment
             v = vert_horiz[vhi]
             n_seg = v['j']-v['i']+1
-            x1i = []
+            xidxi = []
             densityi = []
             n_seg_prev = 0
             n_seg_next = 0
@@ -249,7 +252,7 @@ def refine_warping_path(path):
                     n_seg_next = v2['j']-v2['i']+1
             # Case 1: Vertical Segment
             if v['type'] == 'vert':
-                x1i = [path[i, 0] + k/n_seg for k in range(n_seg+1)]
+                xidxi = [path[i, 0] + k/n_seg for k in range(n_seg+1)]
                 densityi = [n_seg]*(n_seg+1)
                 if n_seg_prev > 0:
                     densityi[0] = n_seg/n_seg_prev
@@ -261,33 +264,33 @@ def refine_warping_path(path):
                     inext = v['j']+1
             # Case 2: Horizontal Segment
             else:  
-                x1i = [path[i, 0] + k for k in range(n_seg)]
+                xidxi = [path[i, 0] + k for k in range(n_seg)]
                 densityi = [1/n_seg]*n_seg
                 if n_seg_prev > 0:
-                    x1i = x1i[1::]
+                    xidxi = xidxi[1::]
                     densityi = densityi[1::]
                 if n_seg_next > 0:
                     inext = v['j']
                 else:
                     inext = v['j']+1
-            x1 += x1i
+            xidx += xidxi
             density += densityi
             vhi += 1
         else:
             # This is a diagonal segment
-            x1 += [path[i, 0], path[i, 0]+1]
+            xidx += [path[i, 0], path[i, 0]+1]
             density += [1, 1]
         i = inext
     
     ## Step 3: Integrate densities
-    x1 = np.array(x1)
+    xidx = np.array(xidx)
     density = np.array(density)
     path_refined = [[0, 0]]
     j = 0
-    for i in range(1, x1.size):
-        if x1[i] > x1[i-1]:
-            j += (x1[i]-x1[i-1])*density[i-1]
-            path_refined.append([x1[i], j])
+    for i in range(1, xidx.size):
+        if xidx[i] > xidx[i-1]:
+            j += (xidx[i]-xidx[i-1])*density[i-1]
+            path_refined.append([xidx[i], j])
     path_refined = np.array(path_refined)
     return path_refined
 

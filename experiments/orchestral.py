@@ -71,30 +71,6 @@ def download_corpus(foldername):
                 subprocess.call(command)
             else:
                 subprocess.call(["mv", "temp.mp3", path])
-    
-def save_audio(x, sr, outprefix):
-    """
-    Save audio to a file
-    Parameters
-    ----------
-    x: ndarray(N, 2)
-        Stereo audio to save
-    sr: int
-        Sample rate of audio to save
-    outprefix: string
-        Use this as the prefix of the file to which to save audio
-    """
-    from scipy.io import wavfile
-    wavfilename = "{}.wav".format(outprefix)
-    mp3filename = "{}.mp3".format(outprefix)
-    if os.path.exists(wavfilename):
-        os.remove(wavfilename)
-    if os.path.exists(mp3filename):
-        os.remove(mp3filename)
-    wavfile.write(wavfilename, sr, x)
-    subprocess.call(["ffmpeg", "-i", wavfilename, mp3filename])
-    os.remove(wavfilename)
-
 
 def align_pieces(filename1, filename2, sr, hop_length, do_mfcc, compare_cpu, do_stretch=False, delta=30, do_stretch_approx=False):
     """
@@ -183,7 +159,7 @@ def align_pieces(filename1, filename2, sr, hop_length, do_mfcc, compare_cpu, do_
         if do_stretch:
             print("Stretching...")
             x = linmdtw.stretch_audio(x1, x2, sr, path_gpu_arr, hop_length)
-            save_audio(x, sr, "{}_{}_sync".format(filename1, prefix))
+            linmdtw.audiotools.save_audio(x, sr, "{}_{}_sync".format(filename1, prefix))
             print("Finished stretching")
 
     # Do approximate alignments
@@ -199,7 +175,7 @@ def align_pieces(filename1, filename2, sr, hop_length, do_mfcc, compare_cpu, do_
         res = {"path_fastdtw":path_fastdtw, "elapsed_fastdtw":elapsed}
         if do_stretch_approx:
             x = linmdtw.stretch_audio(x1, x2, sr, path_fastdtw, hop_length)
-            save_audio(x, sr, "{}_{}_fastdtw_sync".format(filename1, prefix))
+            linmdtw.audiotools.save_audio(x, sr, "{}_{}_fastdtw_sync".format(filename1, prefix))
         # Now do mrmsdtw with different memory restrictions
         for tauexp in [3, 4, 5, 6, 7]:
             print("Doing mrmsdtw 10^%i"%tauexp)

@@ -4,7 +4,7 @@ import scipy.io as sio
 from scipy import sparse
 import time
 import dynseqalign
-from .dtw import dtw_brute_backtrace, linmdtw
+from .dtw import dtw_brute_backtrace, linmdtw, check_euclidean_inputs
 
 def fill_block(A, p, radius, val):
     """
@@ -53,6 +53,7 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
     path: ndarray(K, 2)
         The  warping path
     """
+    X, Y = check_euclidean_inputs(X, Y)
     minTSsize = radius + 2
     M = X.shape[0]
     N = Y.shape[0]
@@ -180,8 +181,7 @@ def mrmsdtw(X, Y, tau, debug=False, refine=True):
     path: ndarray(K, 2)
         The warping path
     """
-    X = np.ascontiguousarray(X)
-    Y = np.ascontiguousarray(Y)
+    X, Y = check_euclidean_inputs(X, Y)
     M = X.shape[0]
     N = Y.shape[0]
     if M*N < tau:
