@@ -4,15 +4,9 @@
 
 # Parallelizable Dynamic Time Warping with Linear Memory
 
-## Dependencies
-* cython
-* numba
-* librosa
-* pycuda
-
-To get started, type
+To get started, simply type
 ~~~~~ bash
-python setup.py build_ext --inplace
+pip install linmdtw
 ~~~~~
 
-Run the file Orchestral.py to download and run all alignment experiments
+Then, check out the notebooks/ directory for example usage
