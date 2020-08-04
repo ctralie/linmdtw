@@ -1,0 +1,699 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>linmdtw.alignmenttools &#8212; linmdtw 0.1.2 documentation</title>
+    <link rel="stylesheet" href="../../_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader">
+      <h1>
+        <a href="../../index.html ">
+          linmdtw 0.1.2 documentation
+        </a>
+        <a id="headermeta" href="https://scikit-tda.org">
+            a scikit-tda project 
+        </a>
+      </h1> 
+  </header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">linmdtw</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for linmdtw.alignmenttools</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">jit</span>
+
+<div class="viewcode-block" id="get_diag_len"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.get_diag_len">[docs]</a><span class="k">def</span> <span class="nf">get_diag_len</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the number of elements in this particular diagonal</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    MTotal: int</span>
+<span class="sd">        Total number of samples in X</span>
+<span class="sd">    NTotal: int</span>
+<span class="sd">        Total number of samples in Y</span>
+<span class="sd">    k: int</span>
+<span class="sd">        Index of the diagonal</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Number of elements</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">box</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">box</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">box</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">box</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">starti</span> <span class="o">=</span> <span class="n">k</span>
+    <span class="n">startj</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">k</span> <span class="o">&gt;=</span> <span class="n">M</span><span class="p">:</span>
+        <span class="n">starti</span> <span class="o">=</span> <span class="n">M</span><span class="o">-</span><span class="mi">1</span>
+        <span class="n">startj</span> <span class="o">=</span> <span class="n">k</span> <span class="o">-</span> <span class="p">(</span><span class="n">M</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">endj</span> <span class="o">=</span> <span class="n">k</span>
+    <span class="n">endi</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">k</span> <span class="o">&gt;=</span> <span class="n">N</span><span class="p">:</span>
+        <span class="n">endj</span> <span class="o">=</span> <span class="n">N</span><span class="o">-</span><span class="mi">1</span>
+        <span class="n">endi</span> <span class="o">=</span> <span class="n">k</span> <span class="o">-</span> <span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">endj</span><span class="o">-</span><span class="n">startj</span><span class="o">+</span><span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="get_diag_indices"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.get_diag_indices">[docs]</a><span class="k">def</span> <span class="nf">get_diag_indices</span><span class="p">(</span><span class="n">MTotal</span><span class="p">,</span> <span class="n">NTotal</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">box</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the indices on a diagonal into indices on an accumulated</span>
+<span class="sd">    distance matrix</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    MTotal: int</span>
+<span class="sd">        Total number of samples in X</span>
+<span class="sd">    NTotal: int</span>
+<span class="sd">        Total number of samples in Y</span>
+<span class="sd">    k: int</span>
+<span class="sd">        Index of the diagonal</span>
+<span class="sd">    box: list [XStart, XEnd, YStart, YEnd]</span>
+<span class="sd">        The coordinates of the box in which to search</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    i: ndarray(dim)</span>
+<span class="sd">        Row indices</span>
+<span class="sd">    j: ndarray(dim)</span>
+<span class="sd">        Column indices</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">box</span><span class="p">:</span>
+        <span class="n">box</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">MTotal</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">NTotal</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">box</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">box</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">box</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">box</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">starti</span> <span class="o">=</span> <span class="n">k</span>
+    <span class="n">startj</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">k</span> <span class="o">&gt;</span> <span class="n">M</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">starti</span> <span class="o">=</span> <span class="n">M</span><span class="o">-</span><span class="mi">1</span>
+        <span class="n">startj</span> <span class="o">=</span> <span class="n">k</span> <span class="o">-</span> <span class="p">(</span><span class="n">M</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">starti</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">startj</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">j</span> <span class="o">&lt;</span> <span class="n">N</span><span class="p">)</span> <span class="c1"># Length of this diagonal</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">dim</span><span class="p">]</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">j</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">dim</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">M</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="n">i</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="n">j</span>
+    <span class="n">i</span> <span class="o">+=</span> <span class="n">box</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">j</span> <span class="o">+=</span> <span class="n">box</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span></div>
+
+<div class="viewcode-block" id="update_alignment_metadata"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.update_alignment_metadata">[docs]</a><span class="k">def</span> <span class="nf">update_alignment_metadata</span><span class="p">(</span><span class="n">metadata</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">newcells</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add new amount of cells to the total cells processed,</span>
+<span class="sd">    and print out a percentage point if there&#39;s been progress</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    newcells: int</span>
+<span class="sd">        The number of new cells that are being processed</span>
+<span class="sd">    metadata: dictionary</span>
+<span class="sd">        Dictionary with &#39;M&#39;, &#39;N&#39;, &#39;totalCells&#39;, all ints</span>
+<span class="sd">        and &#39;timeStart&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">metadata</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;M&#39;</span> <span class="ow">in</span> <span class="n">metadata</span> <span class="ow">and</span> <span class="s1">&#39;N&#39;</span> <span class="ow">in</span> <span class="n">metadata</span> <span class="ow">and</span> <span class="s1">&#39;totalCells&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">time</span>
+            <span class="n">denom</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;M&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;N&#39;</span><span class="p">]</span>
+            <span class="n">before</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="mi">50</span><span class="o">*</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;totalCells&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">denom</span><span class="p">)</span>
+            <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;totalCells&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">newcells</span>
+            <span class="n">after</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="mi">50</span><span class="o">*</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;totalCells&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">denom</span><span class="p">)</span>
+            <span class="n">perc</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="s1">&#39;perc&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+                <span class="n">perc</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;perc&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">after</span> <span class="o">&gt;</span> <span class="n">before</span> <span class="ow">and</span> <span class="n">after</span> <span class="o">%</span> <span class="n">perc</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Parallel Alignment </span><span class="si">{}</span><span class="s2">% &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">after</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s1">&#39;timeStart&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Elapsed time: </span><span class="si">%.3g</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;timeStart&#39;</span><span class="p">]))</span></div>
+
+<div class="viewcode-block" id="get_csm"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.get_csm">[docs]</a><span class="k">def</span> <span class="nf">get_csm</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span> <span class="c1"># pragma: no cover</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the Euclidean cross-similarity matrix between X and Y</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ---------</span>
+<span class="sd">    X: ndarray(M, d)</span>
+<span class="sd">        A d-dimensional Euclidean point cloud with M points</span>
+<span class="sd">    Y: ndarray(N, d)</span>
+<span class="sd">        A d-dimensional Euclidean point cloud with N points</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    D: ndarray(M, N)</span>
+<span class="sd">        The cross-similarity matrix</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">XSqr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">X</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">YSqr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Y</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">C</span> <span class="o">=</span> <span class="n">XSqr</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">YSqr</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">X</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Y</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">C</span><span class="p">[</span><span class="n">C</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">C</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="get_ssm"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.get_ssm">[docs]</a><span class="k">def</span> <span class="nf">get_ssm</span><span class="p">(</span><span class="n">X</span><span class="p">):</span> <span class="c1"># pragma: no cover</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the SSM between all rows of a time-ordered Euclidean point cloud X</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ---------</span>
+<span class="sd">    X: ndarray(M, d)</span>
+<span class="sd">        A d-dimensional Euclidean point cloud with M points</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    D: ndarray(M, M)</span>
+<span class="sd">        The self-similarity matrix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">get_csm</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="get_path_cost"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.get_path_cost">[docs]</a><span class="k">def</span> <span class="nf">get_path_cost</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the cost of a warping path that matches two Euclidean </span>
+<span class="sd">    point clouds</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ---------</span>
+<span class="sd">    X: ndarray(M, d)</span>
+<span class="sd">        A d-dimensional Euclidean point cloud with M points</span>
+<span class="sd">    Y: ndarray(N, d)</span>
+<span class="sd">        A d-dimensional Euclidean point cloud with N points</span>
+<span class="sd">    P1: ndarray(K, 2)</span>
+<span class="sd">        Warping path</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    cost: float</span>
+<span class="sd">        The sum of the Euclidean distances along the warping path </span>
+<span class="sd">        between X and Y</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">path</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">:]</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[</span><span class="n">path</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">:]</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">x</span><span class="o">-</span><span class="n">y</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="make_path_strictly_increase"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.make_path_strictly_increase">[docs]</a><span class="k">def</span> <span class="nf">make_path_strictly_increase</span><span class="p">(</span><span class="n">path</span><span class="p">):</span> <span class="c1"># pragma: no cover</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a warping path, remove all rows that do not</span>
+<span class="sd">    strictly increase from the row before</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">toKeep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">i0</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">path</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">path</span><span class="p">[</span><span class="n">i0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">path</span><span class="p">[</span><span class="n">i0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">i0</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">toKeep</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">path</span><span class="p">[</span><span class="n">toKeep</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]</span></div>
+
+<div class="viewcode-block" id="refine_warping_path"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.refine_warping_path">[docs]</a><span class="k">def</span> <span class="nf">refine_warping_path</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An implementation of the technique in section 4 of </span>
+<span class="sd">    &quot;Refinement Strategies for Music Synchronization&quot; by Ewert and Müller</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path: ndarray(K, 2)</span>
+<span class="sd">        A warping path</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    path_refined: ndarray(N &gt;= K, 2)</span>
+<span class="sd">        A refined set of correspondences</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="c1">## Step 1: Identify all vertical and horizontal segments</span>
+    <span class="n">vert_horiz</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]:</span>
+            <span class="c1"># Vertical line</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span>
+            <span class="k">while</span> <span class="n">path</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">vert_horiz</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;vert&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">:</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;j&#39;</span><span class="p">:</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">})</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="n">j</span><span class="o">-</span><span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">vert_horiz</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;vert&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">:</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;j&#39;</span><span class="p">:</span><span class="n">j</span><span class="p">})</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="n">j</span>
+        <span class="k">elif</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]:</span>
+            <span class="c1"># Horizontal line</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span>
+            <span class="k">while</span> <span class="n">path</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">vert_horiz</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;horiz&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">:</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;j&#39;</span><span class="p">:</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">})</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="n">j</span><span class="o">-</span><span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">vert_horiz</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;type&#39;</span><span class="p">:</span><span class="s1">&#39;horiz&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">:</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;j&#39;</span><span class="p">:</span><span class="n">j</span><span class="p">})</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="n">j</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    
+    <span class="c1">## Step 2: Compute local densities</span>
+    <span class="n">xidx</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">density</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">vhi</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">N</span><span class="p">:</span>
+        <span class="n">inext</span> <span class="o">=</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span>
+        <span class="k">if</span> <span class="n">vhi</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">vert_horiz</span><span class="p">)</span> <span class="ow">and</span> <span class="n">vert_horiz</span><span class="p">[</span><span class="n">vhi</span><span class="p">][</span><span class="s1">&#39;i&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">i</span><span class="p">:</span> <span class="c1"># This is a vertical or horizontal segment</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">vert_horiz</span><span class="p">[</span><span class="n">vhi</span><span class="p">]</span>
+            <span class="n">n_seg</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;j&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;i&#39;</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span>
+            <span class="n">xidxi</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">densityi</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">n_seg_prev</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">n_seg_next</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">vhi</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">v2</span> <span class="o">=</span> <span class="n">vert_horiz</span><span class="p">[</span><span class="n">vhi</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">v2</span><span class="p">[</span><span class="s1">&#39;j&#39;</span><span class="p">]:</span>
+                    <span class="c1"># First segment is at a corner</span>
+                    <span class="n">n_seg_prev</span> <span class="o">=</span> <span class="n">v2</span><span class="p">[</span><span class="s1">&#39;j&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">v2</span><span class="p">[</span><span class="s1">&#39;i&#39;</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span>
+            <span class="k">if</span> <span class="n">vhi</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">vert_horiz</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">v2</span> <span class="o">=</span> <span class="n">vert_horiz</span><span class="p">[</span><span class="n">vhi</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;j&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">v2</span><span class="p">[</span><span class="s1">&#39;i&#39;</span><span class="p">]:</span>
+                    <span class="c1"># Last segment is a corner</span>
+                    <span class="n">n_seg_next</span> <span class="o">=</span> <span class="n">v2</span><span class="p">[</span><span class="s1">&#39;j&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">v2</span><span class="p">[</span><span class="s1">&#39;i&#39;</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span>
+            <span class="c1"># Case 1: Vertical Segment</span>
+            <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;vert&#39;</span><span class="p">:</span>
+                <span class="n">xidxi</span> <span class="o">=</span> <span class="p">[</span><span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">k</span><span class="o">/</span><span class="n">n_seg</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_seg</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+                <span class="n">densityi</span> <span class="o">=</span> <span class="p">[</span><span class="n">n_seg</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">n_seg</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">n_seg_prev</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">densityi</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_seg</span><span class="o">/</span><span class="n">n_seg_prev</span>
+                <span class="k">if</span> <span class="n">n_seg_next</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">densityi</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_seg</span><span class="o">/</span><span class="n">n_seg_next</span>
+                    <span class="n">densityi</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_seg</span><span class="o">/</span><span class="n">n_seg_next</span>
+                    <span class="n">inext</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;j&#39;</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">inext</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;j&#39;</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span>
+            <span class="c1"># Case 2: Horizontal Segment</span>
+            <span class="k">else</span><span class="p">:</span>  
+                <span class="n">xidxi</span> <span class="o">=</span> <span class="p">[</span><span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_seg</span><span class="p">)]</span>
+                <span class="n">densityi</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="o">/</span><span class="n">n_seg</span><span class="p">]</span><span class="o">*</span><span class="n">n_seg</span>
+                <span class="k">if</span> <span class="n">n_seg_prev</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">xidxi</span> <span class="o">=</span> <span class="n">xidxi</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+                    <span class="n">densityi</span> <span class="o">=</span> <span class="n">densityi</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>
+                <span class="k">if</span> <span class="n">n_seg_next</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">inext</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;j&#39;</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">inext</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;j&#39;</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span>
+            <span class="n">xidx</span> <span class="o">+=</span> <span class="n">xidxi</span>
+            <span class="n">density</span> <span class="o">+=</span> <span class="n">densityi</span>
+            <span class="n">vhi</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># This is a diagonal segment</span>
+            <span class="n">xidx</span> <span class="o">+=</span> <span class="p">[</span><span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">density</span> <span class="o">+=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">inext</span>
+    
+    <span class="c1">## Step 3: Integrate densities</span>
+    <span class="n">xidx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xidx</span><span class="p">)</span>
+    <span class="n">density</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">density</span><span class="p">)</span>
+    <span class="n">path_refined</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">xidx</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">xidx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">xidx</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">j</span> <span class="o">+=</span> <span class="p">(</span><span class="n">xidx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">xidx</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="n">density</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">path_refined</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">xidx</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">j</span><span class="p">])</span>
+    <span class="n">path_refined</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">path_refined</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path_refined</span></div>
+
+<div class="viewcode-block" id="get_alignment_area_dist"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.get_alignment_area_dist">[docs]</a><span class="k">def</span> <span class="nf">get_alignment_area_dist</span><span class="p">(</span><span class="n">P1</span><span class="p">,</span> <span class="n">P2</span><span class="p">,</span> <span class="n">do_plot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute area-based alignment error between two warping paths.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ndarray(M, 2): P1</span>
+<span class="sd">        First warping path</span>
+<span class="sd">    ndarray(N, 2): P2</span>
+<span class="sd">        Second warping path</span>
+<span class="sd">    do_plot: boolean</span>
+<span class="sd">        Whether to draw a plot showing the enclosed area</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    score: float</span>
+<span class="sd">        The area score</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">scipy.sparse</span> <span class="k">as</span> <span class="nn">sparse</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">P1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">P1</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">A1</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span>
+    <span class="n">A2</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">P1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">P1</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">P1</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+        <span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">ii</span><span class="p">,</span> <span class="n">M</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">jj</span><span class="p">,</span> <span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
+        <span class="n">A1</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">::]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">P2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">P2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">P2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+        <span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">ii</span><span class="p">,</span> <span class="n">M</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">jj</span><span class="p">,</span> <span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
+        <span class="n">A2</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">::]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">A1</span> <span class="o">-</span> <span class="n">A2</span><span class="p">)</span>
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">A</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">M</span> <span class="o">+</span> <span class="n">N</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">do_plot</span><span class="p">:</span> <span class="c1"># pragma: no cover</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">toarray</span><span class="p">())</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">P1</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">P1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="n">edgecolor</span> <span class="o">=</span> <span class="s1">&#39;none&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">P2</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">P2</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">edgecolor</span> <span class="o">=</span> <span class="s1">&#39;none&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Dist = </span><span class="si">%g</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">dist</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dist</span></div>
+
+
+<div class="viewcode-block" id="get_alignment_row_dists"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.get_alignment_row_dists">[docs]</a><span class="nd">@jit</span><span class="p">(</span><span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_alignment_row_dists</span><span class="p">(</span><span class="n">P1</span><span class="p">,</span> <span class="n">P2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A measurement of errors between two warping paths.</span>
+<span class="sd">    For each point in the first path, record the distance</span>
+<span class="sd">    of the closest point in the same row on the second path</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    P1: ndarray(M, 2)</span>
+<span class="sd">        Ground truth warping path</span>
+<span class="sd">    P2: ndarray(N, 2)</span>
+<span class="sd">        Test warping path</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dists: ndarray(M)</span>
+<span class="sd">        The errors at each point on the first warping path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">dists</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">P1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">i2</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">P1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="c1"># Move along P2 until it&#39;s at the same row</span>
+        <span class="k">while</span> <span class="n">P2</span><span class="p">[</span><span class="n">i2</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">P1</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]:</span>
+            <span class="n">i2</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c1"># Check all entries of P2 that have the same row</span>
+        <span class="n">mindist</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">P2</span><span class="p">[</span><span class="n">i2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">P1</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">i2</span><span class="o">+</span><span class="mi">1</span>
+        <span class="k">while</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">P2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">P2</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">P1</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]:</span>
+            <span class="n">mindist</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">mindist</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">P2</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">P1</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
+            <span class="n">k</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">dists</span><span class="p">[</span><span class="n">i1</span><span class="p">]</span> <span class="o">=</span> <span class="n">mindist</span>
+    <span class="k">return</span> <span class="n">dists</span></div>
+
+<div class="viewcode-block" id="get_alignment_row_col_dists"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.get_alignment_row_col_dists">[docs]</a><span class="k">def</span> <span class="nf">get_alignment_row_col_dists</span><span class="p">(</span><span class="n">P1</span><span class="p">,</span> <span class="n">P2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A measurement of errors between two warping paths.</span>
+<span class="sd">    For each point in the first path, record the distance</span>
+<span class="sd">    of the closest point in the same row on the second path,</span>
+<span class="sd">    and vice versa.  Then repeat this along the columns</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    P1: ndarray(M, 2)</span>
+<span class="sd">        Ground truth warping path</span>
+<span class="sd">    P2: ndarray(N, 2)</span>
+<span class="sd">        Test warping path</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dists: ndarray(2M+2N)</span>
+<span class="sd">        The errors</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dists11</span> <span class="o">=</span> <span class="n">get_alignment_row_dists</span><span class="p">(</span><span class="n">P1</span><span class="p">,</span> <span class="n">P2</span><span class="p">)</span>
+    <span class="n">dists12</span> <span class="o">=</span> <span class="n">get_alignment_row_dists</span><span class="p">(</span><span class="n">P2</span><span class="p">,</span> <span class="n">P1</span><span class="p">)</span>
+    <span class="n">dists21</span> <span class="o">=</span> <span class="n">get_alignment_row_dists</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fliplr</span><span class="p">(</span><span class="n">P1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">fliplr</span><span class="p">(</span><span class="n">P2</span><span class="p">))</span>
+    <span class="n">dists22</span> <span class="o">=</span> <span class="n">get_alignment_row_dists</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fliplr</span><span class="p">(</span><span class="n">P2</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">fliplr</span><span class="p">(</span><span class="n">P1</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">dists11</span><span class="p">,</span> <span class="n">dists12</span><span class="p">,</span> <span class="n">dists21</span><span class="p">,</span> <span class="n">dists22</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="get_interpolated_euclidean_timeseries"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.get_interpolated_euclidean_timeseries">[docs]</a><span class="k">def</span> <span class="nf">get_interpolated_euclidean_timeseries</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Resample a time series in Euclidean space using interp2d</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X: ndarray(M, d)</span>
+<span class="sd">        The Euclidean time series with n points</span>
+<span class="sd">    t: ndarray(N)</span>
+<span class="sd">        A re-parameterization function on the unit interval [0, 1]</span>
+<span class="sd">    kind: string</span>
+<span class="sd">        The kind of interpolation to do</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Y: ndarray(N, d)</span>
+<span class="sd">        The interpolated time series</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">scipy.interpolate</span> <span class="k">as</span> <span class="nn">interp</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">M</span><span class="p">)</span>
+    <span class="n">dix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">interp</span><span class="o">.</span><span class="n">interp2d</span><span class="p">(</span><span class="n">dix</span><span class="p">,</span> <span class="n">t0</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">)</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">dix</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Y</span></div>
+
+<div class="viewcode-block" id="get_inverse_fn_equally_sampled"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.get_inverse_fn_equally_sampled">[docs]</a><span class="k">def</span> <span class="nf">get_inverse_fn_equally_sampled</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the inverse of a 1D function and equally sample it.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ---------</span>
+<span class="sd">    t: ndarray(N)</span>
+<span class="sd">        The domain samples of the original function</span>
+<span class="sd">    x: ndarray(N)</span>
+<span class="sd">        The range samples of the original function</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    y: ndarray(N)</span>
+<span class="sd">        The inverse function samples</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">scipy.interpolate</span> <span class="k">as</span> <span class="nn">interp</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="n">t2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">N</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">interp</span><span class="o">.</span><span class="n">spline</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">t2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">t</span></div>
+
+<div class="viewcode-block" id="get_parameterization_dict"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.get_parameterization_dict">[docs]</a><span class="k">def</span> <span class="nf">get_parameterization_dict</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">do_plot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Construct a dictionary of different types of parameterizations</span>
+<span class="sd">    on the unit interval</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    N: int</span>
+<span class="sd">        Number of samples on the unit interval</span>
+<span class="sd">    do_plot: boolean</span>
+<span class="sd">        Whether to plot all of the parameterizations</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    D: ndarray(N, K)</span>
+<span class="sd">        The dictionary of parameterizations, with each warping path</span>
+<span class="sd">        down a different column</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1">#Polynomial</span>
+    <span class="k">if</span> <span class="n">do_plot</span><span class="p">:</span> <span class="c1"># pragma: no cover</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">131</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Polynomial&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">):</span>
+        <span class="n">tp</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="k">if</span> <span class="n">tp</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">tp</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span><span class="o">/</span><span class="n">tp</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">t</span><span class="o">**</span><span class="p">(</span><span class="n">tp</span><span class="o">**</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">D</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">do_plot</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="c1">#Exponential / Logarithmic</span>
+    <span class="k">if</span> <span class="n">do_plot</span><span class="p">:</span> <span class="c1"># pragma: no cover</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">132</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Exponential / Logarithmic&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">):</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p</span><span class="o">**</span><span class="n">p</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">get_inverse_fn_equally_sampled</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">x2</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">x2</span><span class="p">)</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">x2</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">x2</span><span class="p">)</span>
+        <span class="n">D</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">D</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">do_plot</span><span class="p">:</span> <span class="c1"># pragma: no cover</span>
+            <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x2</span><span class="p">)</span>
+    <span class="c1">#Hyperbolic Tangent</span>
+    <span class="k">if</span> <span class="n">do_plot</span><span class="p">:</span> <span class="c1"># pragma: no cover</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">133</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Hyperbolic Tangent&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">):</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">get_inverse_fn_equally_sampled</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">x2</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">x2</span><span class="p">)</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">x2</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">x2</span><span class="p">)</span>
+        <span class="n">D</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">D</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">do_plot</span><span class="p">:</span> <span class="c1"># pragma: no cover</span>
+            <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x2</span><span class="p">)</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">D</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">D</span></div>
+
+<div class="viewcode-block" id="sample_parameterization_dict"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.sample_parameterization_dict">[docs]</a><span class="k">def</span> <span class="nf">sample_parameterization_dict</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">do_plot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span> 
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a warping path made up of k random elements</span>
+<span class="sd">    drawn from dictionary D</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    D: ndarray(N, K)</span>
+<span class="sd">        The dictionary of warping paths, with each warping path</span>
+<span class="sd">        down a different column</span>
+<span class="sd">    k: int</span>
+<span class="sd">        The number of warping paths to take in a combination</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">D</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="n">D</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">N</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="n">k</span><span class="p">]</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+    <span class="n">weights</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">D</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">res</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">res</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">do_plot</span><span class="p">:</span> <span class="c1"># pragma: no cover</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">idxs</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dim</span><span class="p">),</span> <span class="n">D</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="p">:],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Constructed Warping Path&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="param_to_warppath"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.alignmenttools.param_to_warppath">[docs]</a><span class="k">def</span> <span class="nf">param_to_warppath</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">M</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a parameterization function into a valid warping path</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    t: ndarray(N)</span>
+<span class="sd">        Samples along the parameterization function on the</span>
+<span class="sd">        unit interval</span>
+<span class="sd">    M: int</span>
+<span class="sd">        The number of samples in the original time series</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    P: ndarray(K, 2)</span>
+<span class="sd">        A warping path that best matches the parameterization</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">P</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="o">*</span><span class="p">(</span><span class="n">M</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">P</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">P</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">diff</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">newchunk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">diff</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">newchunk</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">newchunk</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">diff</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">P</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">:],</span> <span class="n">newchunk</span><span class="p">,</span> <span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">::,</span> <span class="p">:]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">P</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<form class="search" action="../../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+<a href=https://github.com/>
+    <p class="caption"><span class="caption-text">
+        <img src="../../_static/gh_logo.png" 
+        height="18px" 
+        width="18px" alt="Github icon">  
+        
+    </span></p>
+</a> 
+
+<p class="caption"><span class="caption-text">Background</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/BasicUsage.html">Synthetic Example of DTW And Its Approximations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/AudioUsage.html">Aligning Orchestral Music</a></li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">linmdtw</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2020, Christopher Tralie.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      2.4.0.
+
+  </footer>
+
+  
+  </body>
+</html>

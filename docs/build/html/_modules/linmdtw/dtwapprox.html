@@ -1,0 +1,378 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>linmdtw.dtwapprox &#8212; linmdtw 0.1.2 documentation</title>
+    <link rel="stylesheet" href="../../_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader">
+      <h1>
+        <a href="../../index.html ">
+          linmdtw 0.1.2 documentation
+        </a>
+        <a id="headermeta" href="https://scikit-tda.org">
+            a scikit-tda project 
+        </a>
+      </h1> 
+  </header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">linmdtw</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for linmdtw.dtwapprox</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">scipy.io</span> <span class="k">as</span> <span class="nn">sio</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">dynseqalign</span>
+<span class="kn">from</span> <span class="nn">.dtw</span> <span class="kn">import</span> <span class="n">dtw_brute_backtrace</span><span class="p">,</span> <span class="n">linmdtw</span><span class="p">,</span> <span class="n">check_euclidean_inputs</span>
+
+<div class="viewcode-block" id="fill_block"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.dtwapprox.fill_block">[docs]</a><span class="k">def</span> <span class="nf">fill_block</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fill a square block with values</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    A: ndarray(M, N) or sparse(M, N)</span>
+<span class="sd">        The array to fill</span>
+<span class="sd">    p: list of [i, j]</span>
+<span class="sd">        The coordinates of the center of the box</span>
+<span class="sd">    radius: int</span>
+<span class="sd">        Half the width of the box</span>
+<span class="sd">    val: float</span>
+<span class="sd">        Value to fill in</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">i1</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">i2</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">j1</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">j2</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">i1</span><span class="p">:</span><span class="n">i2</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">j1</span><span class="p">:</span><span class="n">j2</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span></div>
+
+<div class="viewcode-block" id="fastdtw"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.dtwapprox.fastdtw">[docs]</a><span class="k">def</span> <span class="nf">fastdtw</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">level</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">do_plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An implementation of [1]</span>
+<span class="sd">    [1] FastDTW: Toward Accurate Dynamic Time Warping in Linear Time and Space. Stan Salvador and Philip Chan</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X: ndarray(M, d)</span>
+<span class="sd">        A d-dimensional Euclidean point cloud with M points</span>
+<span class="sd">    Y: ndarray(N, d)</span>
+<span class="sd">        A d-dimensional Euclidean point cloud with N points</span>
+<span class="sd">    radius: int</span>
+<span class="sd">        Radius of the l-infinity box that determines sparsity structure</span>
+<span class="sd">        at each level</span>
+<span class="sd">    debug: boolean</span>
+<span class="sd">        Whether to keep track of debugging information</span>
+<span class="sd">    level: int</span>
+<span class="sd">        An int for keeping track of the level of recursion</span>
+<span class="sd">    do_plot: boolean</span>
+<span class="sd">        Whether to plot the warping path at each level and save to image files</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    path: ndarray(K, 2)</span>
+<span class="sd">        The  warping path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">check_euclidean_inputs</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+    <span class="n">minTSsize</span> <span class="o">=</span> <span class="n">radius</span> <span class="o">+</span> <span class="mi">2</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">M</span> <span class="o">&lt;</span> <span class="n">radius</span> <span class="ow">or</span> <span class="n">N</span> <span class="o">&lt;</span> <span class="n">radius</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dtw_brute_backtrace</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+    <span class="c1"># Recursive step</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">fastdtw</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="p">:],</span> <span class="n">Y</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="p">:],</span> <span class="n">radius</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">level</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">do_plot</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">path</span> <span class="o">*=</span> <span class="mi">2</span>
+    <span class="n">tic</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">S</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">Occ</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span>
+
+    <span class="c1">## Step 1: Figure out the indices of the occupied cells</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
+        <span class="n">fill_block</span><span class="p">(</span><span class="n">Occ</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">I</span><span class="p">,</span> <span class="n">J</span> <span class="o">=</span> <span class="n">Occ</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
+    <span class="c1"># Sort cells in raster order</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">J</span><span class="p">)</span>
+    <span class="n">I</span> <span class="o">=</span> <span class="n">I</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+    <span class="n">J</span> <span class="o">=</span> <span class="n">J</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;stable&#39;</span><span class="p">)</span>
+    <span class="n">I</span> <span class="o">=</span> <span class="n">I</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+    <span class="n">J</span> <span class="o">=</span> <span class="n">J</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="c1">## Step 2: Find indices of left, up, and diag neighbors.  </span>
+    <span class="c1"># All neighbors must be within bounds *and* within sparse structure</span>
+    <span class="c1"># Make idx M+1 x N+1 so -1 will wrap around to 0</span>
+    <span class="c1"># Make 1-indexed so all valid entries have indices &gt; 0</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">I</span><span class="o">.</span><span class="n">size</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">M</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+    <span class="c1"># Left neighbors</span>
+    <span class="n">left</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="n">left</span><span class="p">[</span><span class="n">left</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">left</span> <span class="o">-=</span> <span class="mi">1</span>
+    <span class="c1"># Up neighbors</span>
+    <span class="n">up</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="n">I</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">J</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="n">up</span><span class="p">[</span><span class="n">up</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">up</span> <span class="o">-=</span> <span class="mi">1</span>
+    <span class="c1"># Diag neighbors</span>
+    <span class="n">diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="n">I</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">J</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="n">diag</span><span class="p">[</span><span class="n">diag</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">diag</span> <span class="o">-=</span> <span class="mi">1</span>
+
+    <span class="c1">## Step 3: Pass information to cython for dynamic programming steps</span>
+    <span class="n">S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">I</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="c1"># Dyn prog matrix</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">I</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span> <span class="c1"># Path pointer matrix</span>
+    <span class="n">dynseqalign</span><span class="o">.</span><span class="n">FastDTW_DynProg_Step</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">up</span><span class="p">,</span> <span class="n">diag</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">P</span><span class="p">)</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">P</span><span class="p">,</span> <span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">debug</span> <span class="ow">or</span> <span class="n">do_plot</span><span class="p">:</span> <span class="c1"># pragma: no cover</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">S</span><span class="p">,</span> <span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+    
+    <span class="c1"># Step 4: Do backtracing</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="n">M</span><span class="o">-</span><span class="mi">1</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">N</span><span class="o">-</span><span class="mi">1</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]]</span>
+    <span class="n">step</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="c1"># LEFT, UP, DIAG</span>
+    <span class="k">while</span> <span class="ow">not</span><span class="p">(</span><span class="n">path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">step</span><span class="p">[</span><span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]]</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">j</span> <span class="o">+=</span> <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+    <span class="n">path</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">do_plot</span><span class="p">:</span> <span class="c1"># pragma: no cover</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">toarray</span><span class="p">())</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">path</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">path</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;C1&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Level </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">level</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%i</span><span class="s2">.png&quot;</span><span class="o">%</span><span class="n">level</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">debug</span><span class="p">:</span> <span class="c1"># pragma: no cover</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;path&#39;</span><span class="p">:</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;S&#39;</span><span class="p">:</span><span class="n">S</span><span class="p">,</span> <span class="s1">&#39;P&#39;</span><span class="p">:</span><span class="n">P</span><span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">path</span></div>
+
+<div class="viewcode-block" id="get_box_area"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.dtwapprox.get_box_area">[docs]</a><span class="k">def</span> <span class="nf">get_box_area</span><span class="p">(</span><span class="n">a1</span><span class="p">,</span> <span class="n">a2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the area of a box specified by two anchors</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    a1: list(2)</span>
+<span class="sd">        Row/column of first anchor</span>
+<span class="sd">    a2: list(2)</span>
+<span class="sd">        Row/column of second anchor</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Area of box determined by these two anchors</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">a2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">a1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">a2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">a1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span>
+    <span class="k">return</span> <span class="n">m</span><span class="o">*</span><span class="n">n</span></div>
+
+<div class="viewcode-block" id="mrmsdtw"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.dtwapprox.mrmsdtw">[docs]</a><span class="k">def</span> <span class="nf">mrmsdtw</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An implementation of the approximate, memory-restricted</span>
+<span class="sd">    multiscale DTW technique from [2]</span>
+<span class="sd">    [2] &quot;Memory-Restricted Multiscale Dynamic Time Warping&quot;</span>
+<span class="sd">    Thomas Praetzlich, Jonathan Driedger and Meinard Mueller</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X: ndarray(M, d)</span>
+<span class="sd">        A d-dimensional Euclidean point cloud with M points</span>
+<span class="sd">    Y: ndarray(N, d)</span>
+<span class="sd">        A d-dimensional Euclidean point cloud with N points</span>
+<span class="sd">    tau: int</span>
+<span class="sd">        The max amount of cells to be in memory at any given</span>
+<span class="sd">        time</span>
+<span class="sd">    debug: boolean</span>
+<span class="sd">        Whether to keep track of debugging information</span>
+<span class="sd">    refine: boolean</span>
+<span class="sd">        Whether to do refinement with the &quot;white anchors&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    path: ndarray(K, 2)</span>
+<span class="sd">        The warping path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">check_euclidean_inputs</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">M</span><span class="o">*</span><span class="n">N</span> <span class="o">&lt;</span> <span class="n">tau</span><span class="p">:</span>
+        <span class="c1"># If the matrix is already within the memory bounds, simply</span>
+        <span class="c1"># return DTW</span>
+        <span class="k">return</span> <span class="n">dtw_brute_backtrace</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+
+    <span class="c1">## Step 1: Perform DTW at the coarse level</span>
+    <span class="c1"># Figure out the subsampling factor for the</span>
+    <span class="c1"># coarse alignment based on memory requirements</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">M</span><span class="o">*</span><span class="n">N</span><span class="o">/</span><span class="n">tau</span><span class="p">)))</span>
+    <span class="n">X2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="n">d</span><span class="p">,</span> <span class="p">:])</span>
+    <span class="n">Y2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">Y</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="n">d</span><span class="p">,</span> <span class="p">:])</span>
+    <span class="n">anchors</span> <span class="o">=</span> <span class="n">dtw_brute_backtrace</span><span class="p">(</span><span class="n">X2</span><span class="p">,</span> <span class="n">Y2</span><span class="p">)</span>
+    <span class="n">anchors</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">anchors</span><span class="p">)</span><span class="o">*</span><span class="n">d</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">anchors</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">M</span><span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> <span class="n">anchors</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">anchors</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">M</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    
+    <span class="c1">## Step 2: Subdivide anchors if necessary to keep</span>
+    <span class="c1"># within memory bounds</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">anchors</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">a1</span> <span class="o">=</span> <span class="n">anchors</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">a2</span> <span class="o">=</span> <span class="n">anchors</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">get_box_area</span><span class="p">(</span><span class="n">a1</span><span class="p">,</span> <span class="n">a2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">tau</span><span class="p">:</span>
+            <span class="c1"># Subdivide cell</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">a1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">a2</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">a1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">a2</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">anchors</span> <span class="o">=</span> <span class="n">anchors</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]]</span> <span class="o">+</span> <span class="n">anchors</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">::]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Move on</span>
+            <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+    
+    <span class="c1">## Step 3: Do alignments in each block</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="c1"># Keep track of the &quot;black anchor&quot; indices in the path</span>
+    <span class="n">banchors_idx</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">anchors</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">a1</span> <span class="o">=</span> <span class="n">anchors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">a2</span> <span class="o">=</span> <span class="n">anchors</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">box</span> <span class="o">=</span> <span class="p">[</span><span class="n">a1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">a2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">a1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">a2</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">pathi</span> <span class="o">=</span> <span class="n">linmdtw</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">box</span><span class="o">=</span><span class="n">box</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">pathi</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">path</span><span class="p">,</span> <span class="n">pathi</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">banchors_idx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Add last endpoints</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">path</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">M</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">refine</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">path</span>
+    
+    <span class="c1">## Step 4: Come up with the set of &quot;white anchors&quot;</span>
+    <span class="c1"># First choose them to be at the center of each block</span>
+    <span class="n">wanchors_idx</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">banchors_idx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">wanchors_idx</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">banchors_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">+</span><span class="n">banchors_idx</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]))]</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
+    <span class="c1"># Split anchor positions if the blocks are too big</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">wanchors_idx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">a1</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="n">wanchors_idx</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">a2</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="n">wanchors_idx</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">while</span> <span class="n">get_box_area</span><span class="p">(</span><span class="n">a1</span><span class="p">,</span> <span class="n">a2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">tau</span><span class="p">:</span>
+            <span class="c1"># Move the anchors towards each other</span>
+            <span class="n">wanchors_idx</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">wanchors_idx</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="n">a1</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="n">wanchors_idx</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">a2</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="n">wanchors_idx</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="c1">## Step 5: Do DTW between white anchors and splice path together</span>
+    <span class="n">pathret</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">wanchors_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">wanchors_idx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">a1</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="n">wanchors_idx</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">a2</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="n">wanchors_idx</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="n">box</span> <span class="o">=</span> <span class="p">[</span><span class="n">a1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">a2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">a1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">a2</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">pathi</span> <span class="o">=</span> <span class="n">linmdtw</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">box</span><span class="o">=</span><span class="n">box</span><span class="p">)</span>
+        <span class="n">pathret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">pathret</span><span class="p">,</span> <span class="n">pathi</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># If there&#39;s a gap in between this box and </span>
+        <span class="c1"># the next one, use the path from before</span>
+        <span class="n">i1</span> <span class="o">=</span> <span class="n">wanchors_idx</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">i2</span> <span class="o">=</span> <span class="n">wanchors_idx</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">i1</span> <span class="o">!=</span> <span class="n">i2</span><span class="p">:</span>
+            <span class="n">pathret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">pathret</span><span class="p">,</span> <span class="n">path</span><span class="p">[</span><span class="n">i1</span><span class="p">:</span><span class="n">i2</span><span class="p">,</span> <span class="p">:]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">i1</span> <span class="o">=</span> <span class="n">wanchors_idx</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">pathret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">pathret</span><span class="p">,</span> <span class="n">path</span><span class="p">[</span><span class="n">i1</span><span class="p">::,</span> <span class="p">:]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pathret</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<form class="search" action="../../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+<a href=https://github.com/>
+    <p class="caption"><span class="caption-text">
+        <img src="../../_static/gh_logo.png" 
+        height="18px" 
+        width="18px" alt="Github icon">  
+        
+    </span></p>
+</a> 
+
+<p class="caption"><span class="caption-text">Background</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/BasicUsage.html">Synthetic Example of DTW And Its Approximations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/AudioUsage.html">Aligning Orchestral Music</a></li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">linmdtw</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2020, Christopher Tralie.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      2.4.0.
+
+  </footer>
+
+  
+  </body>
+</html>

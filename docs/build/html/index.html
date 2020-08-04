@@ -1,0 +1,206 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Welcome to linmdtw’s documentation! &#8212; linmdtw 0.1.2 documentation</title>
+    <link rel="stylesheet" href="_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Synthetic Example of DTW And Its Approximations" href="notebooks/BasicUsage.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader">
+      <h1>
+        <a href="# ">
+          linmdtw 0.1.2 documentation
+        </a>
+        <a id="headermeta" href="https://scikit-tda.org">
+            a scikit-tda project 
+        </a>
+      </h1> 
+  </header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          <a href="notebooks/BasicUsage.html" title="Next document">Synthetic Example of DTW And Its Approximations</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="#">linmdtw</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-linmdtw-s-documentation">
+<h1>Welcome to linmdtw’s documentation!<a class="headerlink" href="#welcome-to-linmdtw-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+<p><a class="reference external" href="https://api.travis-ci.org/ctralie/linmdtw"><img alt="Build Status" src="https://api.travis-ci.org/ctralie/linmdtw.svg?branch=master" /></a> <a class="reference external" href="https://codecov.io/gh/ctralie/linmdtw"><img alt="codecov" src="https://codecov.io/gh/ctralie/linmdtw/branch/master/graph/badge.svg" /></a></p>
+</div>
+<div class="section" id="github-repository-repo">
+<h1>Github Repository <a class="reference external" href="https://www.github.com/ctralie/linmdtw"><img alt="repo" src="_static/gh_logo.png" style="width: 24px; height: 24px;" /></a><a class="headerlink" href="#github-repository-repo" title="Permalink to this headline">¶</a></h1>
+<p>Click on the icon above to visit the Github repository hosting this code.  You can file issues, make pull requests, and replicate the experiments in our paper.</p>
+</div>
+<div class="section" id="parallelizable-dynamic-time-warping-with-linear-memory">
+<h1>Parallelizable Dynamic Time Warping with Linear Memory<a class="headerlink" href="#parallelizable-dynamic-time-warping-with-linear-memory" title="Permalink to this headline">¶</a></h1>
+<p>This repository contains an implementation of the linear memory,
+parallelizable algorithm for Dynamic Time Warping (DTW) described in
+[1], which we refer to as ``linmdtw’’ for short. This algorithm can be
+used to align multivarite time series that are re-parameterized version
+of each other, such as audio of different orchestral performances.</p>
+<p>This repository also contains efficient cython implementations of
+FastDTW [2] and Memory-Restricted Multiscale DTW (MrMsDtw). Please refer
+to the background examples for usage.</p>
+<p>For simplicity of implementation, we have restricted our focus to
+multivariate time series in Euclidean spaces, but pull requests are
+welcome!</p>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>To get started, simply type</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install linmdtw
+</pre></div>
+</div>
+<p>Alternatively, you can checkout this repository and run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install -r requirements.txt
+python setup.py install
+</pre></div>
+</div>
+<div class="section" id="audio-utilities">
+<h3>Audio Utilities<a class="headerlink" href="#audio-utilities" title="Permalink to this headline">¶</a></h3>
+<p>By default, it only install requirements needed to align general
+Euclidean time series. To use the audio features and audio stretching
+utilities, you must also install the audio requirements</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/ctralie/linmdtw.git
+<span class="nb">cd</span> linmdtw
+pip install -r requirements.txt
+python setup.py install
+</pre></div>
+</div>
+</div>
+<div class="section" id="gpu-acceleration">
+<h3>GPU Acceleration<a class="headerlink" href="#gpu-acceleration" title="Permalink to this headline">¶</a></h3>
+<p>This library falls back to a CPU implementation when a GPU is not
+available, but it is not recommended. If you have a CUDA-capable GPU on
+your computer, you should install an appropriate version of pycuda by
+running</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install -r requirements_gpu.txt
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="how-to-cite">
+<h2>How To Cite<a class="headerlink" href="#how-to-cite" title="Permalink to this headline">¶</a></h2>
+<p>If you use this software package in any of your work, please cite</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>@inproceedings<span class="o">{</span>tralie2020linmdtw,
+  <span class="nv">title</span><span class="o">={</span>Parallelizable Dynamic Time Warping Alignment withLinear Memory<span class="o">}</span>,
+  <span class="nv">author</span><span class="o">={</span>Tralie, Christopher and Dempsey, Elizabeth<span class="o">}</span>,
+  <span class="nv">booktitle</span><span class="o">={</span>Proc. of the Int. Soc. <span class="k">for</span> Music Information Retrieval Conf. <span class="o">(</span>ISMIR<span class="o">)</span>, in print<span class="o">}</span>,
+  <span class="nv">year</span><span class="o">={</span><span class="m">2020</span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<p>[1]  <a class="reference external" href="http://www.ctralie.com/Research/linmdtw/paper.pdf"><img alt="paper" src="https://upload.wikimedia.org/wikipedia/commons/9/93/Icon_dsonsult.png" style="width: 24px; height: 24px;" /></a> ``Exact, Parallelizable Dynamic Time Warping Alignment with Linear
+Memory’’  by Christopher Tralie and Elizabeth Dempsey.</p>
+<p>[2] Stan Salvador and Phillip Chan. Fastdtw: Toward accurate dynamic
+time warping in linear time andspace.Proc. of ACM Knowledge Data And
+Discovery (KDD), 3rd Wkshp. on Mining Temporal andSequential Data, 2004.</p>
+<p>[3] Thomas Prätzlich, Jonathan Driedger, and Meinard Müller.
+Memory-restricted multiscale dynamic timewarping. InProc. of the IEEE
+Int. Conf. on Acoustics, Speech and Signal Processing (ICASSP),
+pages569–573. IEEE, 2016.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+<form class="search" action="search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+<a href=https://github.com/>
+    <p class="caption"><span class="caption-text">
+        <img src="_static/gh_logo.png" 
+        height="18px" 
+        width="18px" alt="Github icon">  
+        
+    </span></p>
+</a> 
+
+<p class="caption"><span class="caption-text">Background</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/BasicUsage.html">Synthetic Example of DTW And Its Approximations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/AudioUsage.html">Aligning Orchestral Music</a></li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          <a href="notebooks/BasicUsage.html" title="Next document">Synthetic Example of DTW And Its Approximations</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="#">linmdtw</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2020, Christopher Tralie.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      2.4.0.
+
+  </footer>
+
+  
+  </body>
+</html>

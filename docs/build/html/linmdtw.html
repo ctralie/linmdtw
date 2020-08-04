@@ -1,0 +1,764 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>linmdtw package &#8212; linmdtw 0.1.2 documentation</title>
+    <link rel="stylesheet" href="_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader">
+      <h1>
+        <a href="index.html ">
+          linmdtw 0.1.2 documentation
+        </a>
+        <a id="headermeta" href="https://scikit-tda.org">
+            a scikit-tda project 
+        </a>
+      </h1> 
+  </header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">linmdtw</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="linmdtw-package">
+<h1>linmdtw package<a class="headerlink" href="#linmdtw-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-linmdtw.dtw">
+<span id="linmdtw-dtw-module"></span><h2>linmdtw.dtw module<a class="headerlink" href="#module-linmdtw.dtw" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="linmdtw.dtw.check_euclidean_inputs">
+<code class="sig-prename descclassname">linmdtw.dtw.</code><code class="sig-name descname">check_euclidean_inputs</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/dtw.html#check_euclidean_inputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.dtw.check_euclidean_inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the input of two time series in Euclidean spaces, which
+are to be warped to each other.  They must satisfy:
+1. They are in the same dimension space
+2. They are 32-bit
+3. They are in C-contiguous order</p>
+<p>If #2 or #3 are not satisfied, automatically fix them and
+warn the user.
+Furthermore, warn the user if X or Y has more columns than rows,
+since the convention is that points are along rows and dimensions
+are along columns</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>ndarray</em><em>(</em><em>M</em><em>, </em><em>d</em><em>)</em>) – The first time series</p></li>
+<li><p><strong>Y</strong> (<em>ndarray</em><em>(</em><em>N</em><em>, </em><em>d</em><em>)</em>) – The second time series</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>X</strong> (<em>ndarray(M, d)</em>) – The first time series, possibly copied in memory to be 32-bit, C-contiguous</p></li>
+<li><p><strong>Y</strong> (<em>ndarray(N, d)</em>) – The second time series, possibly copied in memory to be 32-bit, C-contiguous</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.dtw.dtw_brute">
+<code class="sig-prename descclassname">linmdtw.dtw.</code><code class="sig-name descname">dtw_brute</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em>, <em class="sig-param">debug=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/dtw.html#dtw_brute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.dtw.dtw_brute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute brute force dynamic time warping between two
+time-ordered point clouds in Euclidean space, using
+cython on the backend</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>ndarray</em><em>(</em><em>M</em><em>, </em><em>d</em><em>)</em>) – A d-dimensional Euclidean point cloud with M points</p></li>
+<li><p><strong>Y</strong> (<em>ndarray</em><em>(</em><em>N</em><em>, </em><em>d</em><em>)</em>) – A d-dimensional Euclidean point cloud with N points</p></li>
+<li><p><strong>debug</strong> (<em>boolean</em>) – Whether to keep track of debugging information</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul>
+<li><p><em>{</em> –</p>
+<dl class="simple">
+<dt>‘cost’: float</dt><dd><p>The optimal cost of the alignment (if computation didn’t stop prematurely),</p>
+</dd>
+<dt>’U’/’L’/’UL’: ndarray(M, N)</dt><dd><p>The choice matrices (if debugging),</p>
+</dd>
+<dt>’S’: ndarray(M, N)</dt><dd><p>The accumulated cost matrix (if debugging)</p>
+</dd>
+</dl>
+</li>
+<li><p><em>}</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.dtw.dtw_brute_backtrace">
+<code class="sig-prename descclassname">linmdtw.dtw.</code><code class="sig-name descname">dtw_brute_backtrace</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em>, <em class="sig-param">debug=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/dtw.html#dtw_brute_backtrace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.dtw.dtw_brute_backtrace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute dynamic time warping between two time-ordered
+point clouds in Euclidean space, using cython on the
+backend.  Then, trace back through the matrix of backpointers
+to extract an alignment path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>ndarray</em><em>(</em><em>M</em><em>, </em><em>d</em><em>)</em>) – A d-dimensional Euclidean point cloud with M points</p></li>
+<li><p><strong>Y</strong> (<em>ndarray</em><em>(</em><em>N</em><em>, </em><em>d</em><em>)</em>) – A d-dimensional Euclidean point cloud with N points</p></li>
+<li><p><strong>debug</strong> (<em>boolean</em>) – Whether to keep track of debugging information</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul>
+<li><p><strong>path (If not debugging)</strong> (<em>ndarray(K, 2)</em>) – The warping path</p></li>
+<li><p><em>If debugging</em></p></li>
+<li><p><em>{</em> –</p>
+<dl class="simple">
+<dt>‘cost’: float</dt><dd><p>The optimal cost of the alignment (if computation didn’t stop prematurely),</p>
+</dd>
+<dt>’U’/’L’/’UL’: ndarray(M, N)</dt><dd><p>The choice matrices (if debugging),</p>
+</dd>
+<dt>’S’: ndarray(M, N)</dt><dd><p>The accumulated cost matrix (if debugging)</p>
+</dd>
+<dt>’path’: ndarray(K, 2)</dt><dd><p>The warping path</p>
+</dd>
+</dl>
+</li>
+<li><p><em>}</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.dtw.dtw_diag">
+<code class="sig-prename descclassname">linmdtw.dtw.</code><code class="sig-name descname">dtw_diag</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em>, <em class="sig-param">k_save=-1</em>, <em class="sig-param">k_stop=-1</em>, <em class="sig-param">box=None</em>, <em class="sig-param">reverse=False</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">metadata=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/dtw.html#dtw_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.dtw.dtw_diag" title="Permalink to this definition">¶</a></dt>
+<dd><p>A CPU version of linear memory diagonal DTW</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>ndarray</em><em>(</em><em>M</em><em>, </em><em>d</em><em>)</em>) – An M-dimensional Euclidean point cloud</p></li>
+<li><p><strong>Y</strong> (<em>ndarray</em><em>(</em><em>N</em><em>, </em><em>d</em><em>)</em>) – An N-dimensional Euclidean point cloud</p></li>
+<li><p><strong>k_save</strong> (<em>int</em>) – Index of the diagonal d2 at which to save d0, d1, and d2</p></li>
+<li><p><strong>k_stop</strong> (<em>int</em>) – Index of the diagonal d2 at which to stop computation</p></li>
+<li><p><strong>box</strong> (<em>list</em>) – A list of [startx, endx, starty, endy]</p></li>
+<li><p><strong>reverse</strong> (<em>boolean</em>) – Whether we’re going in reverse</p></li>
+<li><p><strong>debug</strong> (<em>boolean</em>) – Whether to save the accumulated cost matrix</p></li>
+<li><p><strong>metadata</strong> (<em>dictionary</em>) – A dictionary for storing information about the computation</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul>
+<li><p><em>{</em> –</p>
+<dl class="simple">
+<dt>‘cost’: float</dt><dd><p>The optimal cost of the alignment (if computation didn’t stop prematurely),</p>
+</dd>
+<dt>’U’/’L’/’UL’: ndarray(M, N)</dt><dd><p>The choice matrices (if debugging),</p>
+</dd>
+<dt>’d0’/’d1’/’d2’:ndarray(min(M, N))</dt><dd><p>The saved rows if a save index was chosen,</p>
+</dd>
+<dt>’csm0’/’csm1’/’csm2’:ndarray(min(M, N))</dt><dd><p>The saved cross-similarity distances if a save index was chosen</p>
+</dd>
+</dl>
+</li>
+<li><p><em>}</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.dtw.linmdtw">
+<code class="sig-prename descclassname">linmdtw.dtw.</code><code class="sig-name descname">linmdtw</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em>, <em class="sig-param">box=None</em>, <em class="sig-param">min_dim=500</em>, <em class="sig-param">do_gpu=True</em>, <em class="sig-param">metadata=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/dtw.html#linmdtw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.dtw.linmdtw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Linear memory exact, parallelizable DTW</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>ndarray</em><em>(</em><em>N1</em><em>, </em><em>d</em><em>)</em>) – An N1-dimensional Euclidean point cloud</p></li>
+<li><p><strong>Y</strong> (<em>ndarray</em><em>(</em><em>N2</em><em>, </em><em>d</em><em>)</em>) – An N2-dimensional Euclidean point cloud</p></li>
+<li><p><strong>min_dim</strong> (<em>int</em>) – If one of the dimensions of the rectangular region
+to the left or to the right is less than this number,
+then switch to brute force CPU</p></li>
+<li><p><strong>do_gpu</strong> (<em>boolean</em>) – If true, use the GPU diagonal DTW function as a subroutine.
+Otherwise, use the CPU version.  Both are linear memory, but
+the GPU will go faster for larger synchronization problems</p></li>
+<li><p><strong>metadata</strong> (<em>dictionary</em>) – A dictionary for storing information about the computation</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>path</strong> (<em>ndarray(K, 2)</em>) – The optimal warping path</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-linmdtw.dtwapprox">
+<span id="linmdtw-dtwapprox-module"></span><h2>linmdtw.dtwapprox module<a class="headerlink" href="#module-linmdtw.dtwapprox" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="linmdtw.dtwapprox.fastdtw">
+<code class="sig-prename descclassname">linmdtw.dtwapprox.</code><code class="sig-name descname">fastdtw</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em>, <em class="sig-param">radius</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">level=0</em>, <em class="sig-param">do_plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/dtwapprox.html#fastdtw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.dtwapprox.fastdtw" title="Permalink to this definition">¶</a></dt>
+<dd><p>An implementation of [1]
+[1] FastDTW: Toward Accurate Dynamic Time Warping in Linear Time and Space. Stan Salvador and Philip Chan</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>ndarray</em><em>(</em><em>M</em><em>, </em><em>d</em><em>)</em>) – A d-dimensional Euclidean point cloud with M points</p></li>
+<li><p><strong>Y</strong> (<em>ndarray</em><em>(</em><em>N</em><em>, </em><em>d</em><em>)</em>) – A d-dimensional Euclidean point cloud with N points</p></li>
+<li><p><strong>radius</strong> (<em>int</em>) – Radius of the l-infinity box that determines sparsity structure
+at each level</p></li>
+<li><p><strong>debug</strong> (<em>boolean</em>) – Whether to keep track of debugging information</p></li>
+<li><p><strong>level</strong> (<em>int</em>) – An int for keeping track of the level of recursion</p></li>
+<li><p><strong>do_plot</strong> (<em>boolean</em>) – Whether to plot the warping path at each level and save to image files</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>path</strong> (<em>ndarray(K, 2)</em>) – The  warping path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.dtwapprox.fill_block">
+<code class="sig-prename descclassname">linmdtw.dtwapprox.</code><code class="sig-name descname">fill_block</code><span class="sig-paren">(</span><em class="sig-param">A</em>, <em class="sig-param">p</em>, <em class="sig-param">radius</em>, <em class="sig-param">val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/dtwapprox.html#fill_block"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.dtwapprox.fill_block" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fill a square block with values</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>A</strong> (<em>ndarray</em><em>(</em><em>M</em><em>, </em><em>N</em><em>) or </em><em>sparse</em><em>(</em><em>M</em><em>, </em><em>N</em><em>)</em>) – The array to fill</p></li>
+<li><p><strong>p</strong> (<em>list of</em><em> [</em><em>i</em><em>, </em><em>j</em><em>]</em>) – The coordinates of the center of the box</p></li>
+<li><p><strong>radius</strong> (<em>int</em>) – Half the width of the box</p></li>
+<li><p><strong>val</strong> (<em>float</em>) – Value to fill in</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.dtwapprox.get_box_area">
+<code class="sig-prename descclassname">linmdtw.dtwapprox.</code><code class="sig-name descname">get_box_area</code><span class="sig-paren">(</span><em class="sig-param">a1</em>, <em class="sig-param">a2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/dtwapprox.html#get_box_area"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.dtwapprox.get_box_area" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the area of a box specified by two anchors</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a1</strong> (<em>list</em><em>(</em><em>2</em><em>)</em>) – Row/column of first anchor</p></li>
+<li><p><strong>a2</strong> (<em>list</em><em>(</em><em>2</em><em>)</em>) – Row/column of second anchor</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>Area of box determined by these two anchors</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.dtwapprox.mrmsdtw">
+<code class="sig-prename descclassname">linmdtw.dtwapprox.</code><code class="sig-name descname">mrmsdtw</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em>, <em class="sig-param">tau</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">refine=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/dtwapprox.html#mrmsdtw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.dtwapprox.mrmsdtw" title="Permalink to this definition">¶</a></dt>
+<dd><p>An implementation of the approximate, memory-restricted
+multiscale DTW technique from [2]
+[2] “Memory-Restricted Multiscale Dynamic Time Warping”
+Thomas Praetzlich, Jonathan Driedger and Meinard Mueller</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>ndarray</em><em>(</em><em>M</em><em>, </em><em>d</em><em>)</em>) – A d-dimensional Euclidean point cloud with M points</p></li>
+<li><p><strong>Y</strong> (<em>ndarray</em><em>(</em><em>N</em><em>, </em><em>d</em><em>)</em>) – A d-dimensional Euclidean point cloud with N points</p></li>
+<li><p><strong>tau</strong> (<em>int</em>) – The max amount of cells to be in memory at any given
+time</p></li>
+<li><p><strong>debug</strong> (<em>boolean</em>) – Whether to keep track of debugging information</p></li>
+<li><p><strong>refine</strong> (<em>boolean</em>) – Whether to do refinement with the “white anchors”</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>path</strong> (<em>ndarray(K, 2)</em>) – The warping path</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-linmdtw.alignmenttools">
+<span id="linmdtw-alignmenttools-module"></span><h2>linmdtw.alignmenttools module<a class="headerlink" href="#module-linmdtw.alignmenttools" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="linmdtw.alignmenttools.get_alignment_area_dist">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">get_alignment_area_dist</code><span class="sig-paren">(</span><em class="sig-param">P1</em>, <em class="sig-param">P2</em>, <em class="sig-param">do_plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#get_alignment_area_dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.get_alignment_area_dist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute area-based alignment error between two warping paths.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>2</strong><strong>)</strong> (<em>ndarray</em><em>(</em><em>N</em><em>,</em>) – First warping path</p></li>
+<li><p><strong>2</strong><strong>)</strong> – Second warping path</p></li>
+<li><p><strong>do_plot</strong> (<em>boolean</em>) – Whether to draw a plot showing the enclosed area</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>score</strong> (<em>float</em>) – The area score</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.get_alignment_row_col_dists">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">get_alignment_row_col_dists</code><span class="sig-paren">(</span><em class="sig-param">P1</em>, <em class="sig-param">P2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#get_alignment_row_col_dists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.get_alignment_row_col_dists" title="Permalink to this definition">¶</a></dt>
+<dd><p>A measurement of errors between two warping paths.
+For each point in the first path, record the distance
+of the closest point in the same row on the second path,
+and vice versa.  Then repeat this along the columns</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>P1</strong> (<em>ndarray</em><em>(</em><em>M</em><em>, </em><em>2</em><em>)</em>) – Ground truth warping path</p></li>
+<li><p><strong>P2</strong> (<em>ndarray</em><em>(</em><em>N</em><em>, </em><em>2</em><em>)</em>) – Test warping path</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>dists</strong> (<em>ndarray(2M+2N)</em>) – The errors</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="linmdtw.alignmenttools.get_alignment_row_dists">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">get_alignment_row_dists</code><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#get_alignment_row_dists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.get_alignment_row_dists" title="Permalink to this definition">¶</a></dt>
+<dd><p>A measurement of errors between two warping paths.
+For each point in the first path, record the distance
+of the closest point in the same row on the second path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>P1</strong> (<em>ndarray</em><em>(</em><em>M</em><em>, </em><em>2</em><em>)</em>) – Ground truth warping path</p></li>
+<li><p><strong>P2</strong> (<em>ndarray</em><em>(</em><em>N</em><em>, </em><em>2</em><em>)</em>) – Test warping path</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>dists</strong> (<em>ndarray(M)</em>) – The errors at each point on the first warping path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.get_csm">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">get_csm</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#get_csm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.get_csm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the Euclidean cross-similarity matrix between X and Y</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>ndarray</em><em>(</em><em>M</em><em>, </em><em>d</em><em>)</em>) – A d-dimensional Euclidean point cloud with M points</p></li>
+<li><p><strong>Y</strong> (<em>ndarray</em><em>(</em><em>N</em><em>, </em><em>d</em><em>)</em>) – A d-dimensional Euclidean point cloud with N points</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>D</strong> (<em>ndarray(M, N)</em>) – The cross-similarity matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.get_diag_indices">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">get_diag_indices</code><span class="sig-paren">(</span><em class="sig-param">MTotal</em>, <em class="sig-param">NTotal</em>, <em class="sig-param">k</em>, <em class="sig-param">box=None</em>, <em class="sig-param">reverse=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#get_diag_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.get_diag_indices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the indices on a diagonal into indices on an accumulated
+distance matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>MTotal</strong> (<em>int</em>) – Total number of samples in X</p></li>
+<li><p><strong>NTotal</strong> (<em>int</em>) – Total number of samples in Y</p></li>
+<li><p><strong>k</strong> (<em>int</em>) – Index of the diagonal</p></li>
+<li><p><strong>box</strong> (<em>list</em><em> [</em><em>XStart</em><em>, </em><em>XEnd</em><em>, </em><em>YStart</em><em>, </em><em>YEnd</em><em>]</em>) – The coordinates of the box in which to search</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>i</strong> (<em>ndarray(dim)</em>) – Row indices</p></li>
+<li><p><strong>j</strong> (<em>ndarray(dim)</em>) – Column indices</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.get_diag_len">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">get_diag_len</code><span class="sig-paren">(</span><em class="sig-param">box</em>, <em class="sig-param">k</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#get_diag_len"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.get_diag_len" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the number of elements in this particular diagonal</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>MTotal</strong> (<em>int</em>) – Total number of samples in X</p></li>
+<li><p><strong>NTotal</strong> (<em>int</em>) – Total number of samples in Y</p></li>
+<li><p><strong>k</strong> (<em>int</em>) – Index of the diagonal</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>Number of elements</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.get_interpolated_euclidean_timeseries">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">get_interpolated_euclidean_timeseries</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">t</em>, <em class="sig-param">kind='linear'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#get_interpolated_euclidean_timeseries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.get_interpolated_euclidean_timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resample a time series in Euclidean space using interp2d</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>ndarray</em><em>(</em><em>M</em><em>, </em><em>d</em><em>)</em>) – The Euclidean time series with n points</p></li>
+<li><p><strong>t</strong> (<em>ndarray</em><em>(</em><em>N</em><em>)</em>) – A re-parameterization function on the unit interval [0, 1]</p></li>
+<li><p><strong>kind</strong> (<em>string</em>) – The kind of interpolation to do</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Y</strong> (<em>ndarray(N, d)</em>) – The interpolated time series</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.get_inverse_fn_equally_sampled">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">get_inverse_fn_equally_sampled</code><span class="sig-paren">(</span><em class="sig-param">t</em>, <em class="sig-param">x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#get_inverse_fn_equally_sampled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.get_inverse_fn_equally_sampled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the inverse of a 1D function and equally sample it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<em>ndarray</em><em>(</em><em>N</em><em>)</em>) – The domain samples of the original function</p></li>
+<li><p><strong>x</strong> (<em>ndarray</em><em>(</em><em>N</em><em>)</em>) – The range samples of the original function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>y</strong> (<em>ndarray(N)</em>) – The inverse function samples</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.get_parameterization_dict">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">get_parameterization_dict</code><span class="sig-paren">(</span><em class="sig-param">N</em>, <em class="sig-param">do_plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#get_parameterization_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.get_parameterization_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a dictionary of different types of parameterizations
+on the unit interval</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> (<em>int</em>) – Number of samples on the unit interval</p></li>
+<li><p><strong>do_plot</strong> (<em>boolean</em>) – Whether to plot all of the parameterizations</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>D</strong> (<em>ndarray(N, K)</em>) – The dictionary of parameterizations, with each warping path
+down a different column</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.get_path_cost">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">get_path_cost</code><span class="sig-paren">(</span><em class="sig-param">X</em>, <em class="sig-param">Y</em>, <em class="sig-param">path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#get_path_cost"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.get_path_cost" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the cost of a warping path that matches two Euclidean
+point clouds</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>ndarray</em><em>(</em><em>M</em><em>, </em><em>d</em><em>)</em>) – A d-dimensional Euclidean point cloud with M points</p></li>
+<li><p><strong>Y</strong> (<em>ndarray</em><em>(</em><em>N</em><em>, </em><em>d</em><em>)</em>) – A d-dimensional Euclidean point cloud with N points</p></li>
+<li><p><strong>P1</strong> (<em>ndarray</em><em>(</em><em>K</em><em>, </em><em>2</em><em>)</em>) – Warping path</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>cost</strong> (<em>float</em>) – The sum of the Euclidean distances along the warping path
+between X and Y</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.get_ssm">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">get_ssm</code><span class="sig-paren">(</span><em class="sig-param">X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#get_ssm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.get_ssm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the SSM between all rows of a time-ordered Euclidean point cloud X</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>X</strong> (<em>ndarray</em><em>(</em><em>M</em><em>, </em><em>d</em><em>)</em>) – A d-dimensional Euclidean point cloud with M points</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>D</strong> (<em>ndarray(M, M)</em>) – The self-similarity matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.make_path_strictly_increase">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">make_path_strictly_increase</code><span class="sig-paren">(</span><em class="sig-param">path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#make_path_strictly_increase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.make_path_strictly_increase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a warping path, remove all rows that do not
+strictly increase from the row before</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.param_to_warppath">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">param_to_warppath</code><span class="sig-paren">(</span><em class="sig-param">t</em>, <em class="sig-param">M</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#param_to_warppath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.param_to_warppath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a parameterization function into a valid warping path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<em>ndarray</em><em>(</em><em>N</em><em>)</em>) – Samples along the parameterization function on the
+unit interval</p></li>
+<li><p><strong>M</strong> (<em>int</em>) – The number of samples in the original time series</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>P</strong> (<em>ndarray(K, 2)</em>) – A warping path that best matches the parameterization</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.refine_warping_path">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">refine_warping_path</code><span class="sig-paren">(</span><em class="sig-param">path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#refine_warping_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.refine_warping_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>An implementation of the technique in section 4 of
+“Refinement Strategies for Music Synchronization” by Ewert and Müller</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>ndarray</em><em>(</em><em>K</em><em>, </em><em>2</em><em>)</em>) – A warping path</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>path_refined</strong> (<em>ndarray(N &gt;= K, 2)</em>) – A refined set of correspondences</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.sample_parameterization_dict">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">sample_parameterization_dict</code><span class="sig-paren">(</span><em class="sig-param">D</em>, <em class="sig-param">k</em>, <em class="sig-param">do_plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#sample_parameterization_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.sample_parameterization_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a warping path made up of k random elements
+drawn from dictionary D</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>D</strong> (<em>ndarray</em><em>(</em><em>N</em><em>, </em><em>K</em><em>)</em>) – The dictionary of warping paths, with each warping path
+down a different column</p></li>
+<li><p><strong>k</strong> (<em>int</em>) – The number of warping paths to take in a combination</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.alignmenttools.update_alignment_metadata">
+<code class="sig-prename descclassname">linmdtw.alignmenttools.</code><code class="sig-name descname">update_alignment_metadata</code><span class="sig-paren">(</span><em class="sig-param">metadata=None</em>, <em class="sig-param">newcells=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/alignmenttools.html#update_alignment_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.alignmenttools.update_alignment_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add new amount of cells to the total cells processed,
+and print out a percentage point if there’s been progress</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>newcells</strong> (<em>int</em>) – The number of new cells that are being processed</p></li>
+<li><p><strong>metadata</strong> (<em>dictionary</em>) – Dictionary with ‘M’, ‘N’, ‘totalCells’, all ints
+and ‘timeStart’</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-linmdtw.audiotools">
+<span id="linmdtw-audiotools-module"></span><h2>linmdtw.audiotools module<a class="headerlink" href="#module-linmdtw.audiotools" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="linmdtw.audiotools.get_DLNC0">
+<code class="sig-prename descclassname">linmdtw.audiotools.</code><code class="sig-name descname">get_DLNC0</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">sr</em>, <em class="sig-param">hop_length</em>, <em class="sig-param">lag=10</em>, <em class="sig-param">do_plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/audiotools.html#get_DLNC0"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.audiotools.get_DLNC0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute decaying locally adaptive normalize C0 (DLNC0) features</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>ndarray</em><em>(</em><em>N</em><em>)</em>) – Audio samples</p></li>
+<li><p><strong>sr</strong> (<em>int</em>) – Sample rate</p></li>
+<li><p><strong>hop_length</strong> (<em>int</em>) – Hop size between windows</p></li>
+<li><p><strong>lag</strong> (<em>int</em>) – Number of lags to include</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>X</strong> (<em>ndarray(n_win, 12)</em>) – The DLNC0 features</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.audiotools.get_mfcc_mod">
+<code class="sig-prename descclassname">linmdtw.audiotools.</code><code class="sig-name descname">get_mfcc_mod</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">sr</em>, <em class="sig-param">hop_length</em>, <em class="sig-param">n_mfcc=120</em>, <em class="sig-param">drop=20</em>, <em class="sig-param">n_fft=2048</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/audiotools.html#get_mfcc_mod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.audiotools.get_mfcc_mod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the mfcc_mod features, as described in Gadermaier 2019</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>ndarray</em><em>(</em><em>N</em><em>)</em>) – Audio samples</p></li>
+<li><p><strong>sr</strong> (<em>int</em>) – Sample rate</p></li>
+<li><p><strong>hop_length</strong> (<em>int</em>) – Hop size between windows</p></li>
+<li><p><strong>n_mfcc</strong> (<em>int</em>) – Number of mfcc coefficients to compute</p></li>
+<li><p><strong>drop</strong> (<em>int</em>) – Index under which to ignore coefficients</p></li>
+<li><p><strong>n_fft</strong> (<em>int</em>) – Number of fft points to use in each window</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>X</strong> (<em>ndarray(n_win, n_mfcc-drop)</em>) – The mfcc-mod features</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.audiotools.get_mixed_DLNC0_CENS">
+<code class="sig-prename descclassname">linmdtw.audiotools.</code><code class="sig-name descname">get_mixed_DLNC0_CENS</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">sr</em>, <em class="sig-param">hop_length</em>, <em class="sig-param">lam=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/audiotools.html#get_mixed_DLNC0_CENS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.audiotools.get_mixed_DLNC0_CENS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concatenate DLNC0 to CENS</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>ndarray</em><em>(</em><em>N</em><em>)</em>) – Audio samples</p></li>
+<li><p><strong>sr</strong> (<em>int</em>) – Sample rate</p></li>
+<li><p><strong>hop_length</strong> (<em>int</em>) – Hop size between windows</p></li>
+<li><p><strong>lam</strong> (<em>float</em>) – The coefficient in front of the CENS features</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>X</strong> (<em>ndarray(n_win, 24)</em>) – DLNC0 features along the first 12 columns,
+weighted CENS along the next 12 columns</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.audiotools.load_audio">
+<code class="sig-prename descclassname">linmdtw.audiotools.</code><code class="sig-name descname">load_audio</code><span class="sig-paren">(</span><em class="sig-param">filename</em>, <em class="sig-param">sr=44100</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/audiotools.html#load_audio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.audiotools.load_audio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load an audio waveform from a file.  Try to use ffmpeg
+to convert it to a .wav file so scipy’s fast wavfile loader
+can work.  Otherwise, fall back to the slower librosa</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>string</em>) – Path to audio file to load</p></li>
+<li><p><strong>sr</strong> (<em>int</em>) – Sample rate to use</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>y</strong> (<em>ndarray(N)</em>) – Audio samples</p></li>
+<li><p><strong>sr</strong> (<em>int</em>) – The sample rate that was actually used</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.audiotools.save_audio">
+<code class="sig-prename descclassname">linmdtw.audiotools.</code><code class="sig-name descname">save_audio</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">sr</em>, <em class="sig-param">outprefix</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/audiotools.html#save_audio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.audiotools.save_audio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save audio to a file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>ndarray</em><em>(</em><em>N</em><em>, </em><em>2</em><em>)</em>) – Stereo audio to save</p></li>
+<li><p><strong>sr</strong> (<em>int</em>) – Sample rate of audio to save</p></li>
+<li><p><strong>outprefix</strong> (<em>string</em>) – Use this as the prefix of the file to which to save audio</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="linmdtw.audiotools.stretch_audio">
+<code class="sig-prename descclassname">linmdtw.audiotools.</code><code class="sig-name descname">stretch_audio</code><span class="sig-paren">(</span><em class="sig-param">x1</em>, <em class="sig-param">x2</em>, <em class="sig-param">sr</em>, <em class="sig-param">path</em>, <em class="sig-param">hop_length</em>, <em class="sig-param">refine=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/linmdtw/audiotools.html#stretch_audio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#linmdtw.audiotools.stretch_audio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrap around pyrubberband to warp one audio stream
+to another, according to some warping path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x1</strong> (<em>ndarray</em><em>(</em><em>M</em><em>)</em>) – First audio stream</p></li>
+<li><p><strong>x2</strong> (<em>ndarray</em><em>(</em><em>N</em><em>)</em>) – Second audio stream</p></li>
+<li><p><strong>sr</strong> (<em>int</em>) – Sample rate</p></li>
+<li><p><strong>path</strong> (<em>ndarray</em><em>(</em><em>P</em><em>, </em><em>2</em><em>)</em>) – Warping path, in units of windows</p></li>
+<li><p><strong>hop_length</strong> (<em>int</em>) – The hop length between windows</p></li>
+<li><p><strong>refine</strong> (<em>boolean</em>) – Whether to refine the warping path before alignment</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>x3</strong> (<em>ndarray(N, 2)</em>) – The synchronized audio.  x2 is in the right channel,
+and x1 stretched to x2 is in the left channel</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-linmdtw">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-linmdtw" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+<form class="search" action="search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+<a href=https://github.com/>
+    <p class="caption"><span class="caption-text">
+        <img src="_static/gh_logo.png" 
+        height="18px" 
+        width="18px" alt="Github icon">  
+        
+    </span></p>
+</a> 
+
+<p class="caption"><span class="caption-text">Background</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/BasicUsage.html">Synthetic Example of DTW And Its Approximations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/AudioUsage.html">Aligning Orchestral Music</a></li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">linmdtw</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2020, Christopher Tralie.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      2.4.0.
+
+  </footer>
+
+  
+  </body>
+</html>

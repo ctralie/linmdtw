@@ -1,0 +1,347 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>linmdtw.audiotools &#8212; linmdtw 0.1.2 documentation</title>
+    <link rel="stylesheet" href="../../_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader">
+      <h1>
+        <a href="../../index.html ">
+          linmdtw 0.1.2 documentation
+        </a>
+        <a id="headermeta" href="https://scikit-tda.org">
+            a scikit-tda project 
+        </a>
+      </h1> 
+  </header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">linmdtw</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for linmdtw.audiotools</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<div class="viewcode-block" id="load_audio"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.audiotools.load_audio">[docs]</a><span class="k">def</span> <span class="nf">load_audio</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">sr</span> <span class="o">=</span> <span class="mi">44100</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load an audio waveform from a file.  Try to use ffmpeg</span>
+<span class="sd">    to convert it to a .wav file so scipy&#39;s fast wavfile loader</span>
+<span class="sd">    can work.  Otherwise, fall back to the slower librosa</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    filename: string</span>
+<span class="sd">        Path to audio file to load</span>
+<span class="sd">    sr: int</span>
+<span class="sd">        Sample rate to use</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    y: ndarray(N)</span>
+<span class="sd">        Audio samples</span>
+<span class="sd">    sr: int</span>
+<span class="sd">        The sample rate that was actually used</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># First, try a faster version of loading audio</span>
+        <span class="kn">from</span> <span class="nn">scipy.io</span> <span class="kn">import</span> <span class="n">wavfile</span>
+        <span class="kn">import</span> <span class="nn">subprocess</span>
+        <span class="kn">import</span> <span class="nn">os</span>
+        <span class="n">FFMPEG_BINARY</span> <span class="o">=</span> <span class="s2">&quot;ffmpeg&quot;</span>
+        <span class="n">wavfilename</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.wav&quot;</span><span class="o">%</span><span class="n">filename</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">wavfilename</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">wavfilename</span><span class="p">)</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="n">FFMPEG_BINARY</span><span class="p">,</span> <span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;-ar&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%i</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">sr</span><span class="p">,</span> <span class="s2">&quot;-ac&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="n">wavfilename</span><span class="p">],</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">wavfile</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">wavfilename</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">/</span><span class="mf">2.0</span><span class="o">**</span><span class="mi">15</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">wavfilename</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="n">sr</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="c1"># Otherwise, fall back to librosa</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Falling back to librosa for audio reading, which may be slow for long audio files&quot;</span><span class="p">)</span>
+        <span class="kn">import</span> <span class="nn">librosa</span>
+        <span class="k">return</span> <span class="n">librosa</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="save_audio"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.audiotools.save_audio">[docs]</a><span class="k">def</span> <span class="nf">save_audio</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">outprefix</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Save audio to a file</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x: ndarray(N, 2)</span>
+<span class="sd">        Stereo audio to save</span>
+<span class="sd">    sr: int</span>
+<span class="sd">        Sample rate of audio to save</span>
+<span class="sd">    outprefix: string</span>
+<span class="sd">        Use this as the prefix of the file to which to save audio</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">scipy.io</span> <span class="kn">import</span> <span class="n">wavfile</span>
+    <span class="kn">import</span> <span class="nn">subprocess</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="n">wavfilename</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">.wav&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">outprefix</span><span class="p">)</span>
+    <span class="n">mp3filename</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">.mp3&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">outprefix</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">wavfilename</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">wavfilename</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">mp3filename</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">mp3filename</span><span class="p">)</span>
+    <span class="n">wavfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">wavfilename</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+    <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s2">&quot;ffmpeg&quot;</span><span class="p">,</span> <span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="n">wavfilename</span><span class="p">,</span> <span class="n">mp3filename</span><span class="p">])</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">wavfilename</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="get_DLNC0"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.audiotools.get_DLNC0">[docs]</a><span class="k">def</span> <span class="nf">get_DLNC0</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">hop_length</span><span class="p">,</span> <span class="n">lag</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">do_plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute decaying locally adaptive normalize C0 (DLNC0) features</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x: ndarray(N)</span>
+<span class="sd">        Audio samples</span>
+<span class="sd">    sr: int</span>
+<span class="sd">        Sample rate</span>
+<span class="sd">    hop_length: int</span>
+<span class="sd">        Hop size between windows</span>
+<span class="sd">    lag: int</span>
+<span class="sd">        Number of lags to include</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    X: ndarray(n_win, 12)</span>
+<span class="sd">        The DLNC0 features</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">scipy.ndimage.filters</span> <span class="kn">import</span> <span class="n">gaussian_filter1d</span> <span class="k">as</span> <span class="n">gf1d</span>
+    <span class="kn">from</span> <span class="nn">scipy.ndimage.filters</span> <span class="kn">import</span> <span class="n">maximum_filter1d</span>
+    <span class="kn">import</span> <span class="nn">librosa</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">librosa</span><span class="o">.</span><span class="n">cqt</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span> <span class="n">hop_length</span><span class="o">=</span><span class="n">hop_length</span><span class="p">,</span> <span class="n">bins_per_octave</span><span class="o">=</span><span class="mi">12</span><span class="p">))</span>
+    <span class="c1"># Half-wave rectify discrete derivative</span>
+    <span class="c1">#X = librosa.amplitude_to_db(X, ref=np.max)</span>
+    <span class="c1">#X[:, 0:-1] = X[:, 1::] - X[:, 0:-1]</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">gf1d</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">order</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">X</span><span class="p">[</span><span class="n">X</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># Retain peaks</span>
+    <span class="n">XLeft</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">XRight</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">::]</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">mask</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">XLeft</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">XRight</span><span class="p">)</span>
+    <span class="n">X</span><span class="p">[</span><span class="n">mask</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># Fold into octave</span>
+    <span class="n">n_octaves</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">12</span><span class="p">)</span>
+    <span class="n">X2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">12</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_octaves</span><span class="p">):</span>
+        <span class="n">X2</span> <span class="o">+=</span> <span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="mi">12</span><span class="p">:(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">12</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">X2</span>
+    <span class="c1"># Compute norms</span>
+    <span class="k">if</span> <span class="n">do_plot</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">librosa.display</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">411</span><span class="p">)</span>
+        <span class="n">librosa</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">specshow</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span> <span class="n">x_axis</span><span class="o">=</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">y_axis</span><span class="o">=</span><span class="s1">&#39;chroma&#39;</span><span class="p">)</span>
+    <span class="n">norms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">X</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">do_plot</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">412</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">norms</span><span class="p">)</span>
+    <span class="n">norms</span> <span class="o">=</span> <span class="n">maximum_filter1d</span><span class="p">(</span><span class="n">norms</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">sr</span><span class="o">/</span><span class="n">hop_length</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">do_plot</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">librosa.display</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">norms</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">413</span><span class="p">)</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">/</span><span class="n">norms</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">librosa</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">specshow</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span> <span class="n">x_axis</span><span class="o">=</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">y_axis</span><span class="o">=</span><span class="s1">&#39;chroma&#39;</span><span class="p">)</span>
+    <span class="c1"># Apply LNCO</span>
+    <span class="n">decays</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">lag</span><span class="o">+</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">::]</span>
+    <span class="n">decays</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">decays</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">XRet</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">lag</span><span class="o">+</span><span class="mi">1</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lag</span><span class="p">):</span>
+        <span class="n">XRet</span><span class="p">[:,</span> <span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">M</span><span class="p">]</span> <span class="o">+=</span> <span class="n">X</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="n">M</span><span class="p">]</span><span class="o">*</span><span class="n">decays</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">do_plot</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">414</span><span class="p">)</span>
+        <span class="n">librosa</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">specshow</span><span class="p">(</span><span class="n">XRet</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span> <span class="n">x_axis</span><span class="o">=</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">y_axis</span><span class="o">=</span><span class="s1">&#39;chroma&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">XRet</span></div>
+
+<div class="viewcode-block" id="get_mixed_DLNC0_CENS"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.audiotools.get_mixed_DLNC0_CENS">[docs]</a><span class="k">def</span> <span class="nf">get_mixed_DLNC0_CENS</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">hop_length</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Concatenate DLNC0 to CENS</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x: ndarray(N)</span>
+<span class="sd">        Audio samples</span>
+<span class="sd">    sr: int</span>
+<span class="sd">        Sample rate</span>
+<span class="sd">    hop_length: int</span>
+<span class="sd">        Hop size between windows</span>
+<span class="sd">    lam: float</span>
+<span class="sd">        The coefficient in front of the CENS features</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    X: ndarray(n_win, 24)</span>
+<span class="sd">        DLNC0 features along the first 12 columns, </span>
+<span class="sd">        weighted CENS along the next 12 columns</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">librosa</span>
+    <span class="n">X1</span> <span class="o">=</span> <span class="n">get_DLNC0</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">hop_length</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">X2</span> <span class="o">=</span> <span class="n">lam</span><span class="o">*</span><span class="n">librosa</span><span class="o">.</span><span class="n">feature</span><span class="o">.</span><span class="n">chroma_cens</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span> <span class="n">hop_length</span><span class="o">=</span><span class="n">hop_length</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="get_mfcc_mod"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.audiotools.get_mfcc_mod">[docs]</a><span class="k">def</span> <span class="nf">get_mfcc_mod</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">hop_length</span><span class="p">,</span> <span class="n">n_mfcc</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">n_fft</span> <span class="o">=</span> <span class="mi">2048</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the mfcc_mod features, as described in Gadermaier 2019</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x: ndarray(N)</span>
+<span class="sd">        Audio samples</span>
+<span class="sd">    sr: int</span>
+<span class="sd">        Sample rate</span>
+<span class="sd">    hop_length: int</span>
+<span class="sd">        Hop size between windows</span>
+<span class="sd">    n_mfcc: int</span>
+<span class="sd">        Number of mfcc coefficients to compute</span>
+<span class="sd">    drop: int</span>
+<span class="sd">        Index under which to ignore coefficients</span>
+<span class="sd">    n_fft: int</span>
+<span class="sd">        Number of fft points to use in each window</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    X: ndarray(n_win, n_mfcc-drop)</span>
+<span class="sd">        The mfcc-mod features</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">skimage.transform</span>
+    <span class="kn">import</span> <span class="nn">librosa</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">librosa</span><span class="o">.</span><span class="n">feature</span><span class="o">.</span><span class="n">mfcc</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span> <span class="n">hop_length</span><span class="o">=</span><span class="n">hop_length</span><span class="p">,</span> <span class="n">n_mfcc</span> <span class="o">=</span> <span class="n">n_mfcc</span><span class="p">,</span> <span class="n">n_fft</span><span class="o">=</span><span class="n">n_fft</span><span class="p">,</span> <span class="n">htk</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">drop</span><span class="p">::,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">return</span> <span class="n">X</span></div>
+
+<div class="viewcode-block" id="stretch_audio"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.audiotools.stretch_audio">[docs]</a><span class="k">def</span> <span class="nf">stretch_audio</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">hop_length</span><span class="p">,</span> <span class="n">refine</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrap around pyrubberband to warp one audio stream</span>
+<span class="sd">    to another, according to some warping path</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x1: ndarray(M)</span>
+<span class="sd">        First audio stream</span>
+<span class="sd">    x2: ndarray(N)</span>
+<span class="sd">        Second audio stream</span>
+<span class="sd">    sr: int</span>
+<span class="sd">        Sample rate</span>
+<span class="sd">    path: ndarray(P, 2)</span>
+<span class="sd">        Warping path, in units of windows</span>
+<span class="sd">    hop_length: int</span>
+<span class="sd">        The hop length between windows</span>
+<span class="sd">    refine: boolean</span>
+<span class="sd">        Whether to refine the warping path before alignment</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    x3: ndarray(N, 2)</span>
+<span class="sd">        The synchronized audio.  x2 is in the right channel,</span>
+<span class="sd">        and x1 stretched to x2 is in the left channel</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">.alignmenttools</span> <span class="kn">import</span> <span class="n">refine_warping_path</span>
+    <span class="kn">import</span> <span class="nn">pyrubberband</span> <span class="k">as</span> <span class="nn">pyrb</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Stretching...&quot;</span><span class="p">)</span>
+    <span class="n">path_final</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">refine</span><span class="p">:</span>
+        <span class="n">path_final</span> <span class="o">=</span> <span class="n">refine_warping_path</span><span class="p">(</span><span class="n">path_final</span><span class="p">)</span>
+    <span class="n">path_final</span> <span class="o">*=</span> <span class="n">hop_length</span>
+    <span class="n">path_final</span> <span class="o">=</span> <span class="p">[(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">path_final</span> <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">x1</span><span class="o">.</span><span class="n">size</span> <span class="ow">and</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">x2</span><span class="o">.</span><span class="n">size</span><span class="p">]</span>
+    <span class="n">path_final</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">x1</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">x2</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+    <span class="n">x3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">x2</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">x3</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x2</span>
+    <span class="n">x1_stretch</span> <span class="o">=</span> <span class="n">pyrb</span><span class="o">.</span><span class="n">timemap_stretch</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">path_final</span><span class="p">)</span>
+    <span class="n">x3</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x1_stretch</span>
+    <span class="k">return</span> <span class="n">x3</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<form class="search" action="../../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+<a href=https://github.com/>
+    <p class="caption"><span class="caption-text">
+        <img src="../../_static/gh_logo.png" 
+        height="18px" 
+        width="18px" alt="Github icon">  
+        
+    </span></p>
+</a> 
+
+<p class="caption"><span class="caption-text">Background</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/BasicUsage.html">Synthetic Example of DTW And Its Approximations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/AudioUsage.html">Aligning Orchestral Music</a></li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">linmdtw</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2020, Christopher Tralie.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      2.4.0.
+
+  </footer>
+
+  
+  </body>
+</html>

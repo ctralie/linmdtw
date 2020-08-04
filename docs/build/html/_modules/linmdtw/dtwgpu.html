@@ -1,0 +1,349 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>linmdtw.dtwgpu &#8212; linmdtw 0.1.2 documentation</title>
+    <link rel="stylesheet" href="../../_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader">
+      <h1>
+        <a href="../../index.html ">
+          linmdtw 0.1.2 documentation
+        </a>
+        <a id="headermeta" href="https://scikit-tda.org">
+            a scikit-tda project 
+        </a>
+      </h1> 
+  </header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">linmdtw</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for linmdtw.dtwgpu</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Provides an interface to CUDA for running a parallel version</span>
+<span class="sd">of the diagonal DTW algorithm</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">.alignmenttools</span> <span class="kn">import</span> <span class="n">get_diag_len</span><span class="p">,</span> <span class="n">get_diag_indices</span><span class="p">,</span> <span class="n">update_alignment_metadata</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="n">DTW_Step_</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">DTW_GPU_Initialized</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">DTW_GPU_Failed</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="init_gpu"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.dtwgpu.init_gpu">[docs]</a><span class="k">def</span> <span class="nf">init_gpu</span><span class="p">():</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    __global__ void DTW_Diag_Step(float* d0, float* d1, float* d2, float* csm0, float* csm1, float* csm2, float* X, float* Y, int dim, int diagLen, int* box, int reverse, int i, int debug, float* U, float* L, float* UL, float* S) {</span>
+<span class="s2">        //Other local variables</span>
+<span class="s2">        int i1, i2, j1, j2; // Endpoints of the diagonal</span>
+<span class="s2">        int thisi, thisj; // Current indices on the diagonal</span>
+<span class="s2">        // Optimal score and particular score for up/right/left</span>
+<span class="s2">        float score, left, up, diag; </span>
+<span class="s2">        int idx = threadIdx.x + blockIdx.x*blockDim.x;</span>
+<span class="s2">        int xi, yj;</span>
+
+<span class="s2">        //Process each diagonal</span>
+<span class="s2">        score = -1;</span>
+<span class="s2">        if (idx &lt; diagLen) {</span>
+<span class="s2">            // Figure out indices in X and Y on diagonal</span>
+<span class="s2">            int M = box[1] - box[0] + 1;</span>
+<span class="s2">            int N = box[3] - box[2] + 1;</span>
+<span class="s2">            i1 = i;</span>
+<span class="s2">            j1 = 0;</span>
+<span class="s2">            if (i &gt;= M) {</span>
+<span class="s2">                i1 = M-1;</span>
+<span class="s2">                j1 = i - (M-1);</span>
+<span class="s2">            }</span>
+<span class="s2">            j2 = i;</span>
+<span class="s2">            i2 = 0;</span>
+<span class="s2">            if (j2 &gt;= N) {</span>
+<span class="s2">                j2 = N-1;</span>
+<span class="s2">                i2 = i - (N-1);</span>
+<span class="s2">            }</span>
+<span class="s2">            thisi = i1 - idx;</span>
+<span class="s2">            thisj = j1 + idx;</span>
+<span class="s2">            </span>
+<span class="s2">            if (thisi &gt;= i2 &amp;&amp; thisj &lt;= j2) {</span>
+<span class="s2">                xi = thisi;</span>
+<span class="s2">                yj = thisj;</span>
+<span class="s2">                if (reverse == 1) {</span>
+<span class="s2">                    xi = M-1-xi;</span>
+<span class="s2">                    yj = N-1-yj;</span>
+<span class="s2">                }</span>
+<span class="s2">                xi += box[0];</span>
+<span class="s2">                yj += box[2];</span>
+<span class="s2">                // Step 1: Update csm2</span>
+<span class="s2">                csm2[idx] = 0.0;</span>
+<span class="s2">                for (int d = 0; d &lt; dim; d++) {</span>
+<span class="s2">                    float diff = X[xi*dim+d] - Y[yj*dim+d];</span>
+<span class="s2">                    csm2[idx] += diff*diff;</span>
+<span class="s2">                }</span>
+<span class="s2">                csm2[idx] = sqrt(csm2[idx]);</span>
+<span class="s2">                </span>
+
+<span class="s2">                // Step 2: Figure out the optimal cost</span>
+<span class="s2">                if (thisi == 0 &amp;&amp; thisj == 0) {</span>
+<span class="s2">                    score = 0;</span>
+<span class="s2">                    if (debug == -1) {</span>
+<span class="s2">                        S[0] = 0;</span>
+<span class="s2">                        U[0] = -1;</span>
+<span class="s2">                        L[0] = -1;</span>
+<span class="s2">                        UL[0] = -1;</span>
+<span class="s2">                    }</span>
+<span class="s2">                }</span>
+<span class="s2">                else {</span>
+<span class="s2">                    left = -1;</span>
+<span class="s2">                    up = -1;</span>
+<span class="s2">                    diag = -1;</span>
+<span class="s2">                    if (j1 == 0) {</span>
+<span class="s2">                        if (idx &gt; 0) {</span>
+<span class="s2">                            left = d1[idx-1] + csm1[idx-1];</span>
+<span class="s2">                        }</span>
+<span class="s2">                        if (idx &gt; 0 &amp;&amp; thisi &gt; 0) {</span>
+<span class="s2">                            diag = d0[idx-1] + csm0[idx-1];</span>
+<span class="s2">                        }</span>
+<span class="s2">                        if (thisi &gt; 0) {</span>
+<span class="s2">                            up = d1[idx] + csm1[idx];</span>
+<span class="s2">                        }</span>
+<span class="s2">                    }</span>
+<span class="s2">                    else if (i1 == M-1 &amp;&amp; j1 == 1) {</span>
+<span class="s2">                        left = d1[idx] + csm1[idx];</span>
+<span class="s2">                        if (thisi &gt; 0) {</span>
+<span class="s2">                            diag = d0[idx] + csm0[idx];</span>
+<span class="s2">                            up = d1[idx+1] + csm1[idx+1];</span>
+<span class="s2">                        }</span>
+<span class="s2">                    }</span>
+<span class="s2">                    else if (i1 == M-1 &amp;&amp; j1 &gt; 1) {</span>
+<span class="s2">                        left = d1[idx] + csm1[idx];</span>
+<span class="s2">                        if (thisi &gt; 0) {</span>
+<span class="s2">                            diag = d0[idx+1] + csm0[idx+1];</span>
+<span class="s2">                            up = d1[idx+1] + csm1[idx+1];</span>
+<span class="s2">                        }</span>
+<span class="s2">                    }</span>
+<span class="s2">                    if (left &gt; -1) {</span>
+<span class="s2">                        score = left;</span>
+<span class="s2">                    }</span>
+<span class="s2">                    if (up &gt; -1 &amp;&amp; (up &lt; score || score == -1)) {</span>
+<span class="s2">                        score = up;</span>
+<span class="s2">                    }</span>
+<span class="s2">                    if (diag &gt; -1 &amp;&amp; (diag &lt; score || score == -1)) {</span>
+<span class="s2">                        score = diag;</span>
+<span class="s2">                    }</span>
+<span class="s2">                    if (debug == 1) {</span>
+<span class="s2">                        U[thisi*N + thisj] = up;</span>
+<span class="s2">                        L[thisi*N + thisj] = left;</span>
+<span class="s2">                        UL[thisi*N + thisj] = diag;</span>
+<span class="s2">                        S[thisi*N + thisj] = score;</span>
+<span class="s2">                    }</span>
+<span class="s2">                }</span>
+<span class="s2">            }</span>
+<span class="s2">            d2[idx] = score;</span>
+<span class="s2">        }</span>
+<span class="s2">    }</span>
+<span class="s2">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">DTW_GPU_Initialized</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">DTW_GPU_Initialized</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">pycuda.autoinit</span>
+            <span class="kn">from</span> <span class="nn">pycuda.compiler</span> <span class="kn">import</span> <span class="n">SourceModule</span>
+            <span class="n">mod</span> <span class="o">=</span> <span class="n">SourceModule</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+            <span class="k">global</span> <span class="n">DTW_Step_</span>
+            <span class="n">DTW_Step_</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;DTW_Diag_Step&quot;</span><span class="p">)</span>
+            <span class="n">DTW_GPU_Initialized</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">global</span> <span class="n">DTW_GPU_Failed</span>
+            <span class="n">DTW_GPU_Failed</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Unable to compile GPU kernel </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="dtw_diag_gpu"><a class="viewcode-back" href="../../linmdtw.html#linmdtw.dtwgpu.dtw_diag_gpu">[docs]</a><span class="k">def</span> <span class="nf">dtw_diag_gpu</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">k_save</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">k_stop</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">box</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute dynamic time warping between two time-ordered</span>
+<span class="sd">    point clouds in Euclidean space, using CUDA on the back end</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X: ndarray(M, d)</span>
+<span class="sd">        An M-dimensional Euclidean point cloud</span>
+<span class="sd">    Y: ndarray(N, d)</span>
+<span class="sd">        An N-dimensional Euclidean point cloud</span>
+<span class="sd">    k_save: int</span>
+<span class="sd">        Index of the diagonal d2 at which to save d0, d1, and d2</span>
+<span class="sd">    k_stop: int</span>
+<span class="sd">        Index of the diagonal d2 at which to stop computation</span>
+<span class="sd">    debug: boolean</span>
+<span class="sd">        Whether to save the accumulated cost matrix</span>
+<span class="sd">    metadata: dictionary</span>
+<span class="sd">        A dictionary for storing information about the computation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">global</span> <span class="n">DTW_GPU_Initialized</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">DTW_GPU_Initialized</span><span class="p">:</span>
+        <span class="n">init_gpu</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">DTW_GPU_Failed</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="kn">import</span> <span class="nn">pycuda.gpuarray</span> <span class="k">as</span> <span class="nn">gpuarray</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">metadata</span><span class="p">:</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;XGPU&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;XGPU&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+    <span class="n">XGPU</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;XGPU&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;YGPU&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+        <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;YGPU&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+    <span class="n">YGPU</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;YGPU&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">box</span><span class="p">:</span>
+        <span class="n">box</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">box</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">box</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">box</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">box</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">box_gpu</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">))</span>
+    <span class="n">reverse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">reverse</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+    <span class="n">diagLen</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">threadsPerBlock</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">diagLen</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span>
+    <span class="n">gridSize</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">diagLen</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">threadsPerBlock</span><span class="p">)))</span>
+    <span class="n">threadsPerBlock</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">threadsPerBlock</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+    <span class="n">d0</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">diagLen</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+    <span class="n">d1</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">diagLen</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+    <span class="n">d2</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">diagLen</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+    <span class="n">csm0</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">d0</span><span class="p">)</span>
+    <span class="n">csm1</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">d0</span><span class="p">)</span>
+    <span class="n">csm2</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">d0</span><span class="p">)</span>
+    <span class="n">csm0len</span> <span class="o">=</span> <span class="n">diagLen</span>
+    <span class="n">csm1len</span> <span class="o">=</span> <span class="n">diagLen</span>
+    <span class="n">csm2len</span> <span class="o">=</span> <span class="n">diagLen</span>
+
+    <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+        <span class="n">U</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+        <span class="n">UL</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">U</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+        <span class="n">UL</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">gpuarray</span><span class="o">.</span><span class="n">to_gpu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">M</span><span class="o">+</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">DTW_Step_</span><span class="p">(</span><span class="n">d0</span><span class="p">,</span> <span class="n">d1</span><span class="p">,</span> <span class="n">d2</span><span class="p">,</span> <span class="n">csm0</span><span class="p">,</span> <span class="n">csm1</span><span class="p">,</span> <span class="n">csm2</span><span class="p">,</span> <span class="n">XGPU</span><span class="p">,</span> <span class="n">YGPU</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="n">diagLen</span><span class="p">,</span> <span class="n">box_gpu</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">reverse</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">debug</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="n">U</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">UL</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">threadsPerBlock</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">grid</span><span class="o">=</span><span class="p">(</span><span class="n">gridSize</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">csm2len</span> <span class="o">=</span> <span class="n">get_diag_len</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+        <span class="n">update_alignment_metadata</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="n">csm2len</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">k_save</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="s1">&#39;d0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d0</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="n">res</span><span class="p">[</span><span class="s1">&#39;csm0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">csm0</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="mi">0</span><span class="p">:</span><span class="n">csm0len</span><span class="p">]</span>
+            <span class="n">res</span><span class="p">[</span><span class="s1">&#39;d1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d1</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="n">res</span><span class="p">[</span><span class="s1">&#39;csm1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">csm1</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="mi">0</span><span class="p">:</span><span class="n">csm1len</span><span class="p">]</span>
+            <span class="n">res</span><span class="p">[</span><span class="s1">&#39;d2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d2</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="n">res</span><span class="p">[</span><span class="s1">&#39;csm2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">csm2</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="mi">0</span><span class="p">:</span><span class="n">csm2len</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">k_stop</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="n">M</span><span class="o">+</span><span class="n">N</span><span class="o">-</span><span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># Rotate buffers</span>
+            <span class="n">temp</span> <span class="o">=</span> <span class="n">d0</span>
+            <span class="n">d0</span> <span class="o">=</span> <span class="n">d1</span>
+            <span class="n">d1</span> <span class="o">=</span> <span class="n">d2</span>
+            <span class="n">d2</span> <span class="o">=</span> <span class="n">temp</span>
+            <span class="n">temp</span> <span class="o">=</span> <span class="n">csm0</span>
+            <span class="n">csm0</span> <span class="o">=</span> <span class="n">csm1</span>
+            <span class="n">csm1</span> <span class="o">=</span> <span class="n">csm2</span>
+            <span class="n">csm2</span> <span class="o">=</span> <span class="n">temp</span>
+            <span class="n">temp</span> <span class="o">=</span> <span class="n">csm0len</span>
+            <span class="n">csm0len</span> <span class="o">=</span> <span class="n">csm1len</span>
+            <span class="n">csm1len</span> <span class="o">=</span> <span class="n">csm2len</span>
+            <span class="n">csm2len</span> <span class="o">=</span> <span class="n">temp</span>
+    <span class="n">res</span><span class="p">[</span><span class="s1">&#39;cost&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d2</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">csm2</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+        <span class="n">res</span><span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">U</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="n">res</span><span class="p">[</span><span class="s1">&#39;L&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">L</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="n">res</span><span class="p">[</span><span class="s1">&#39;UL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">UL</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="n">res</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">S</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">res</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<form class="search" action="../../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+<a href=https://github.com/>
+    <p class="caption"><span class="caption-text">
+        <img src="../../_static/gh_logo.png" 
+        height="18px" 
+        width="18px" alt="Github icon">  
+        
+    </span></p>
+</a> 
+
+<p class="caption"><span class="caption-text">Background</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/BasicUsage.html">Synthetic Example of DTW And Its Approximations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/AudioUsage.html">Aligning Orchestral Music</a></li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">linmdtw</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2020, Christopher Tralie.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      2.4.0.
+
+  </footer>
+
+  
+  </body>
+</html>
