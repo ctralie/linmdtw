@@ -7,14 +7,29 @@ Welcome to linmdtw's documentation!
 ===================================
 
 .. toctree::
-   :maxdepth: 5
+   :maxdepth: 2
    :caption: Contents:
 
 
+.. toctree::
+    :maxdepth: 2
+    :hidden:
+    :caption: Background
+
+    notebooks/BasicUsage
+    notebooks/AudioUsage
+    
+
+.. toctree::
+    :maxdepth: 2
+    :hidden:
+    :caption: Module Index
+    
+    :ref:`modindex`
 
 Indices and tables
 ==================
 
-* :ref:`genindex`
 * :ref:`modindex`
+* :ref:`genindex`
 * :ref:`search`

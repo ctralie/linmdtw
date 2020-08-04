@@ -21,7 +21,6 @@ linmdtw.dtwapprox module
    :show-inheritance:
 
 
-
 linmdtw.alignmenttools module
 -----------------------------
 
