@@ -75,7 +75,7 @@ def plot_err_distributions(short = True):
         XChromaMFCC[i, :] = get_cdf(distfn(chroma_path_gpu, mfcc_path_gpu), times)
     
     times = times/hop_size
-    names = ["Chroma\nFastDTW"] + ["MFCC\nMRMSDTW\n$10^%i$"%exp for exp in tauexp] + ["MFCC\nFastDTW"] + ["Chroma\nMRMSDTW\n$10^%i$"%exp for exp in tauexp] + ["Chroma\nvs\nMFCC"]
+    names = ["DLNC0\nFastDTW"] + ["DLNC0\nMRMSDTW\n$10^%i$"%exp for exp in tauexp] + ["mfcc-mod\nFastDTW"] + ["mfcc-mod\nMRMSDTW\n$10^%i$"%exp for exp in tauexp] + ["DLNC0\nvs\nmfcc-mod"]
     results = [XChromaFastDTW] + XChromaMRMSDTW + [XMFCCFastDTW] + XMFCCMRMSDTW + [XChromaMFCC]
     if short:
         names = ["CPU vs CPU\n64-bit", "GPU vs CPU\n32-bit"] + names
@@ -215,7 +215,7 @@ def get_memory_table():
             print("Ours: ", min(M, N)*4*3/(1024**2), "MB")
             print("FastDTW: ", 4*min(M, N)*(4*delta+5)/(1024**2), "MB" )
 
-#plot_err_distributions(short=True)
+plot_err_distributions(short=True)
 plot_err_distributions(short=False)
 #draw_systolic_array()
 #get_length_distributions()
