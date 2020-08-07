@@ -1,0 +1,6 @@
+include *.md
+include linmdtw/dtw.cpp
+include linmdtw/dtwapprox.cpp
+include linmdtw/dnyseqalign.cpp
+include linmdtw/dynseqalign.pxd
+include linmdtw/dynseqalign.pyx
