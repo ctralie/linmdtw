@@ -233,5 +233,7 @@ def stretch_audio(x1, x2, sr, path, hop_length, refine = True):
     x3 = np.zeros((x2.size, 2))
     x3[:, 1] = x2
     x1_stretch = pyrb.timemap_stretch(x1, sr, path_final)
+    x1_stretch = x1_stretch[0:min(x1_stretch.size, x3.shape[0])]
+    x3 = x3[0:min(x3.shape[0], x1_stretch.size), :]
     x3[:, 0] = x1_stretch
     return x3
