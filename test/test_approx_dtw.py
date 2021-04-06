@@ -27,6 +27,33 @@ class TestDTWApprox:
         err1 = linmdtw.get_alignment_row_col_dists(path1, path2)
         err2 = linmdtw.get_alignment_row_col_dists(path1, path3)
         assert(np.mean(err1) <= np.mean(err2))
+    
+    def test_cdtw(self):
+        """
+        Test constrained dynamic time warping with Sakoe-Chiba band
+        """
+        np.random.seed(1)
+        M = 100
+        N = 150
+        t1 = np.linspace(0, 1, M)
+        X = np.zeros((M, 2), dtype=np.float32)
+        X[:, 0] = np.cos(2*np.pi*t1)
+        X[:, 1] = np.sin(8*np.pi*t1)
+        ## Sample an element from a dictionary of parameterizations
+        ## and use this parameterization to interpolate the original
+        ## time series
+        D = linmdtw.alignmenttools.get_parameterization_dict(N)
+        s = linmdtw.alignmenttools.sample_parameterization_dict(D, 4)
+        Y = linmdtw.alignmenttools.get_interpolated_euclidean_timeseries(X, s)
+
+        cost10 = linmdtw.get_path_cost(X, Y, linmdtw.cdtw(X, Y, 10))
+        cost10_T = linmdtw.get_path_cost(Y, X, linmdtw.cdtw(Y, X, 10))
+        assert(cost10 == cost10_T)
+        cost4 = linmdtw.get_path_cost(X, Y, linmdtw.cdtw(X, Y, 4))
+        cost4_T = linmdtw.get_path_cost(Y, X, linmdtw.cdtw(Y, X, 4))
+        assert(cost4 == cost4_T)
+        assert(cost10 < cost4)
+        assert(cost10_T < cost4_T)
         
 
     def test_mrmsdtw(self):
