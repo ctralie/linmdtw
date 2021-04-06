@@ -27,10 +27,10 @@ def fill_block(A, p, radius, val):
     j2 = min(p[1]+radius, A.shape[1]-1)
     A[i1:i2+1, j1:j2+1] = val
 
-def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
+def _dtw_constrained_occ(X, Y, Occ, debug=False, level=0, do_plot=False):
     """
-    An implementation of [1]
-    [1] FastDTW: Toward Accurate Dynamic Time Warping in Linear Time and Space. Stan Salvador and Philip Chan
+    DTW on a constrained occupancy mask.  A helper method for both fastdtw
+    and cdtw
     
     Parameters
     ----------
@@ -38,13 +38,12 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
         A d-dimensional Euclidean point cloud with M points
     Y: ndarray(N, d)
         A d-dimensional Euclidean point cloud with N points
-    radius: int
-        Radius of the l-infinity box that determines sparsity structure
-        at each level
+    Occ: scipy.sparse((M, N))
+        A MxN array with 1s if this cell is to be evaluated and 0s otherwise
     debug: boolean
         Whether to keep track of debugging information
     level: int
-        An int for keeping track of the level of recursion
+        An int for keeping track of the level of recursion, if applicable
     do_plot: boolean
         Whether to plot the warping path at each level and save to image files
     
@@ -53,28 +52,11 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
     path: ndarray(K, 2)
         The  warping path
     """
-    X, Y = check_euclidean_inputs(X, Y)
-    minTSsize = radius + 2
     M = X.shape[0]
     N = Y.shape[0]
-    X = np.ascontiguousarray(X)
-    Y = np.ascontiguousarray(Y)
-    if M < radius or N < radius:
-        return dtw_brute_backtrace(X, Y)
-    # Recursive step
-    path = fastdtw(X[0::2, :], Y[0::2, :], radius, debug, level+1, do_plot)
-    if type(path) is dict:
-        path = path['path']
-    path = np.array(path)
-    path *= 2
     tic = time.time()
     S = sparse.lil_matrix((M, N))
     P = sparse.lil_matrix((M, N), dtype=int)
-    Occ = sparse.lil_matrix((M, N))
-
-    ## Step 1: Figure out the indices of the occupied cells
-    for p in path:
-        fill_block(Occ, p, radius, 1)
     I, J = Occ.nonzero()
     # Sort cells in raster order
     idx = np.argsort(J)
@@ -135,6 +117,98 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
         return {'path':path, 'S':S, 'P':P}
     else:
         return path
+
+def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
+    """
+    An implementation of [1]
+    [1] FastDTW: Toward Accurate Dynamic Time Warping in Linear Time and Space. Stan Salvador and Philip Chan
+    
+    Parameters
+    ----------
+    X: ndarray(M, d)
+        A d-dimensional Euclidean point cloud with M points
+    Y: ndarray(N, d)
+        A d-dimensional Euclidean point cloud with N points
+    radius: int
+        Radius of the l-infinity box that determines sparsity structure
+        at each level
+    debug: boolean
+        Whether to keep track of debugging information
+    level: int
+        An int for keeping track of the level of recursion
+    do_plot: boolean
+        Whether to plot the warping path at each level and save to image files
+    
+    Returns
+    -------
+    path: ndarray(K, 2)
+        The  warping path
+    """
+    X, Y = check_euclidean_inputs(X, Y)
+    minTSsize = radius + 2
+    M = X.shape[0]
+    N = Y.shape[0]
+    X = np.ascontiguousarray(X)
+    Y = np.ascontiguousarray(Y)
+    if M < radius or N < radius:
+        return dtw_brute_backtrace(X, Y)
+    # Recursive step
+    path = fastdtw(X[0::2, :], Y[0::2, :], radius, debug, level+1, do_plot)
+    if type(path) is dict:
+        path = path['path']
+    path = np.array(path)
+    path *= 2
+    Occ = sparse.lil_matrix((M, N))
+
+    ## Step 1: Figure out the indices of the occupied cells
+    for p in path:
+        fill_block(Occ, p, radius, 1)
+    return _dtw_constrained_occ(X, Y, Occ, debug, level, do_plot)
+
+def cdtw(X, Y, radius, debug=False, do_plot=False):
+    """
+    Dynamic time warping with constraints, as per the Sakoe-Chiba band
+    
+    Parameters
+    ----------
+    X: ndarray(M, d)
+        A d-dimensional Euclidean point cloud with M points
+    Y: ndarray(N, d)
+        A d-dimensional Euclidean point cloud with N points
+    radius: int
+        How far away a warping path is allowed to stray from the identity
+        map in either direction
+    debug: boolean
+        Whether to keep track of debugging information
+    do_plot: boolean
+        Whether to plot the warping path at each level and save to image files
+    
+    Returns
+    -------
+    path: ndarray(K, 2)
+        The  warping path
+    """
+    radius = int(max(radius, 1))
+    X, Y = check_euclidean_inputs(X, Y)
+    M = X.shape[0]
+    N = Y.shape[0]
+    X = np.ascontiguousarray(X)
+    Y = np.ascontiguousarray(Y)
+    if M < radius or N < radius:
+        return dtw_brute_backtrace(X, Y)
+    ## Step 1: Figure out the indices of the occupied cells
+    Occ = sparse.lil_matrix((M, N))
+    slope = M/N
+    for i in range(max(M, N)):
+        p = []
+        if M < N:
+            p = [int(slope*i), i]
+        else:
+            p = [i, int(i/slope)]
+        fill_block(Occ, p, radius, 1)
+    return _dtw_constrained_occ(X, Y, Occ, debug, 0, do_plot)
+    
+
 
 def get_box_area(a1, a2):
     """

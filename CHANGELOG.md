@@ -1,3 +1,6 @@
+# 0.1.6
+    Adding constrained DTW with a Sakoe-Chiba band
+
 # 0.1.5
     Fixing bug in audio alignment with time stretching
 
