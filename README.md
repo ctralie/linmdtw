@@ -6,7 +6,7 @@
 
 This repository contains an implementation of the linear memory, parallelizable algorithm for Dynamic Time Warping (DTW) described in [1], which we refer to as ``linmdtw'' for short.  This algorithm can be used to align multivarite time series that are re-parameterized version of each other, such as audio of different orchestral performances.  Please refer to the notebooks for examples.
 
-This repository also contains efficient cython implementations of FastDTW [2] and Memory-Restricted Multiscale DTW (MrMsDtw).  Please refer to the examples for usage.
+This repository also contains efficient cython implementations of FastDTW [2], Memory-Restricted Multiscale DTW (MrMsDtw) [3], and globally constrained DTW with a Sakoe-Chiba band (so-called "cdtw").  Please refer to the examples for usage.
 
 For simplicity of implementation, we have restricted our focus to multivariate time series in Euclidean spaces, but pull requests are welcome!  
 
@@ -72,7 +72,6 @@ One of the figures that depicts alignment discrepancies on longer pieces is show
 
 <img src = "LongerOrchestralDiscrepancies.png">
 
-In each figure for each pairwise comparison,
 
 ## How To Cite
 
