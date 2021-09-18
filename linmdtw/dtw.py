@@ -319,8 +319,17 @@ def linmdtw(X, Y, box=None, min_dim=500, do_gpu=True, metadata=None):
         dleft = res1['d%i'%k]
         dright = res2['d%i'%k]
         csmright = res2['csm%i'%k]
-        diagsum = dleft + dright + csmright
-        idx = np.argmin(diagsum)
+
+        # if first index is -1, it will be removed for calculation
+        # for determining correct index, we need to add 1 again
+        shift = 1 if dleft[0] == -1 else 0
+
+        dleft = np.delete(dleft, np.where(dleft == -1))         # Remove -1 from np.array dleft
+        csmright = np.delete(csmright, np.where(dright == -1))  # Remove item where -1 corresponds to dright
+        dright = np.delete(dright, np.where(dright == -1))      # Remove -1 from np.array dright
+        
+        diagsum = dleft + dright - csmright                     # Use formula (4) from paper
+        idx = np.argmin(diagsum) + shift                        # shift index if necessary
         if diagsum[idx] < min_cost:
             min_cost = diagsum[idx]
             i, j = get_diag_indices(X.shape[0], Y.shape[0], k_save-2+k, box)
@@ -330,7 +339,7 @@ def linmdtw(X, Y, box=None, min_dim=500, do_gpu=True, metadata=None):
     left_path = []
     box_left = [box[0], min_idxs[0], box[2], min_idxs[1]]
     left_path = linmdtw(X, Y, box_left, min_dim, do_gpu, metadata)
-
+    
     # Recursively compute right paths
     right_path = []
     box_right = [min_idxs[0], box[1], min_idxs[1], box[3]]

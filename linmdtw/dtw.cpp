@@ -123,7 +123,7 @@ void c_diag_step(float* d0, float* d1, float* d2, float* csm0, float* csm1, floa
                 csm2[idx] += diff*diff;
             }
             csm2[idx] = sqrt(csm2[idx]);
-            
+
 
             // Step 2: Figure out the optimal cost
             if (thisi == 0 && thisj == 0) {
@@ -141,27 +141,27 @@ void c_diag_step(float* d0, float* d1, float* d2, float* csm0, float* csm1, floa
                 diag = -1;
                 if (j1 == 0) {
                     if (idx > 0) {
-                        left = d1[idx-1] + csm1[idx-1];
+                        left = d1[idx-1];
                     }
                     if (idx > 0 && thisi > 0) {
-                        diag = d0[idx-1] + csm0[idx-1];
+                        diag = d0[idx-1];
                     }
                     if (thisi > 0) {
-                        up = d1[idx] + csm1[idx];
+                        up = d1[idx];
                     }
                 }
                 else if (i1 == M-1 && j1 == 1) {
-                    left = d1[idx] + csm1[idx];
+                    left = d1[idx];
                     if (thisi > 0) {
-                        diag = d0[idx] + csm0[idx];
-                        up = d1[idx+1] + csm1[idx+1];
+                        diag = d0[idx];
+                        up = d1[idx+1];
                     }
                 }
                 else if (i1 == M-1 && j1 > 1) {
-                    left = d1[idx] + csm1[idx];
+                    left = d1[idx];
                     if (thisi > 0) {
-                        diag = d0[idx+1] + csm0[idx+1];
-                        up = d1[idx+1] + csm1[idx+1];
+                        diag = d0[idx+1];
+                        up = d1[idx+1];
                     }
                 }
                 if (left > -1) {
@@ -181,6 +181,7 @@ void c_diag_step(float* d0, float* d1, float* d2, float* csm0, float* csm1, floa
                 }
             }
         }
-        d2[idx] = score;
+        d2[idx] = score + csm2[idx];    // optimal accumulated cost + euclidean cost
+
     }
 }
