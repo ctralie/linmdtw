@@ -63,7 +63,7 @@ def init_gpu():
 
                 // Step 2: Figure out the optimal cost
                 if (thisi == 0 && thisj == 0) {
-                    score = 0;
+                    score = 0 + csm2[idx];
                     if (debug == -1) {
                         S[0] = 0;
                         U[0] = -1;
@@ -77,27 +77,27 @@ def init_gpu():
                     diag = -1;
                     if (j1 == 0) {
                         if (idx > 0) {
-                            left = d1[idx-1] + csm1[idx-1];
+                            left = d1[idx-1];
                         }
                         if (idx > 0 && thisi > 0) {
-                            diag = d0[idx-1] + csm0[idx-1];
+                            diag = d0[idx-1];
                         }
                         if (thisi > 0) {
-                            up = d1[idx] + csm1[idx];
+                            up = d1[idx];
                         }
                     }
                     else if (i1 == M-1 && j1 == 1) {
-                        left = d1[idx] + csm1[idx];
+                        left = d1[idx];
                         if (thisi > 0) {
-                            diag = d0[idx] + csm0[idx];
-                            up = d1[idx+1] + csm1[idx+1];
+                            diag = d0[idx];
+                            up = d1[idx+1];
                         }
                     }
                     else if (i1 == M-1 && j1 > 1) {
-                        left = d1[idx] + csm1[idx];
+                        left = d1[idx];
                         if (thisi > 0) {
-                            diag = d0[idx+1] + csm0[idx+1];
-                            up = d1[idx+1] + csm1[idx+1];
+                            diag = d0[idx+1];
+                            up = d1[idx+1];
                         }
                     }
                     if (left > -1) {
@@ -117,7 +117,7 @@ def init_gpu():
                     }
                 }
             }
-            d2[idx] = score;
+            d2[idx] = score + csm2[idx];
         }
     }
     """
