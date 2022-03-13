@@ -97,8 +97,8 @@ def dtw_brute_backtrace(X, Y, debug=False):
         Whether to keep track of debugging information
     Returns
     -------
-    path (If not debugging): ndarray(K, 2)
-        The warping path
+    If not debugging:
+        (float: cost, ndarray(K, 2): The warping path)
     
     If debugging
     {
@@ -131,7 +131,7 @@ def dtw_brute_backtrace(X, Y, debug=False):
     if debug: # pragma: no cover
         res['path'] = path
         return res
-    return path
+    return (res['cost'], path)
     
 
 def dtw_diag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=False, metadata=None):
@@ -176,17 +176,23 @@ def dtw_diag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fa
     M = box[1] - box[0] + 1
     N = box[3] - box[2] + 1
     box = np.array(box, dtype=np.int32)
+    if k_stop == -1:
+        k_stop = M+N-2
+    if k_save == -1:
+        k_save = k_stop
 
     # Debugging info
     U = np.zeros((1, 1), dtype=np.float32)
     L = np.zeros_like(U)
     UL = np.zeros_like(U)
     S = np.zeros_like(U)
+    CSM = np.zeros_like(U)
     if debug: # pragma: no cover
         U = np.zeros((M, N), dtype=np.float32)
         L = np.zeros_like(U)
         UL = np.zeros_like(U)
         S = np.zeros_like(U)
+        CSM = np.zeros_like(U)
     
     # Diagonals
     diagLen = min(M, N)
@@ -203,9 +209,12 @@ def dtw_diag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fa
 
     # Loop through diagonals
     res = {}
-    for k in range(M+N-1):
+    for k in range(k_stop+1):
         DTW_Diag_Step(d0, d1, d2, csm0, csm1, csm2, X, Y, diagLen, box, int(reverse), k, int(debug), U, L, UL, S)
         csm2len = get_diag_len(box, k)
+        if debug:
+            i, j = get_diag_indices(M, N, k)
+            CSM[i, j] = csm2[0:i.size]
         if metadata:
             update_alignment_metadata(metadata, csm2len)
         if k == k_save:
@@ -215,27 +224,27 @@ def dtw_diag(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debug=Fa
             res['csm1'] = csm1.copy()
             res['d2'] = d2.copy()
             res['csm2'] = csm2.copy()
-        if k == k_stop:
-            break
-        # Shift diagonals
-        temp = d0
-        d0 = d1
-        d1 = d2
-        d2 = temp
-        temp = csm0
-        csm0 = csm1
-        csm1 = csm2
-        csm2 = temp
-        temp = csm0len
-        csm0len = csm1len
-        csm1len = csm2len
-        csm2len = temp
+        if k < k_stop:
+            # Shift diagonals (triple buffering)
+            temp = d0
+            d0 = d1
+            d1 = d2
+            d2 = temp
+            temp = csm0
+            csm0 = csm1
+            csm1 = csm2
+            csm2 = temp
+            temp = csm0len
+            csm0len = csm1len
+            csm1len = csm2len
+            csm2len = temp
     res['cost'] = d2[0] + csm2[0]
     if debug: # pragma: no cover
         res['U'] = U
         res['L'] = L
         res['UL'] = UL
         res['S'] = S
+        res['CSM'] = CSM
     return res
 
 def linmdtw(X, Y, box=None, min_dim=500, do_gpu=True, metadata=None):
@@ -261,8 +270,7 @@ def linmdtw(X, Y, box=None, min_dim=500, do_gpu=True, metadata=None):
     
     Returns
     -------
-    path: ndarray(K, 2)
-        The optimal warping path
+        (float: cost, ndarray(K, 2): The optimal warping path)
     """
     X, Y = check_euclidean_inputs(X, Y)
     dtw_diag_fn = dtw_diag
@@ -285,11 +293,11 @@ def linmdtw(X, Y, box=None, min_dim=500, do_gpu=True, metadata=None):
     if M < min_dim or N < min_dim:
         if metadata:
             metadata['totalCells'] += M*N
-        path = dtw_brute_backtrace(X[box[0]:box[1]+1, :], Y[box[2]:box[3]+1, :])
+        cost, path = dtw_brute_backtrace(X[box[0]:box[1]+1, :], Y[box[2]:box[3]+1, :])
         for p in path:
             p[0] += box[0]
             p[1] += box[2]
-        return path
+        return (cost, path)
     
     # Otherwise, proceed with recursion
     K = M + N - 1
@@ -305,9 +313,14 @@ def linmdtw(X, Y, box=None, min_dim=500, do_gpu=True, metadata=None):
     res2['d0'], res2['d2'] = res2['d2'], res2['d0']
     res2['csm0'], res2['csm2'] = res2['csm2'], res2['csm0']
     # Chop off extra diagonal elements
-    for res in res1, res2:
-        for i in range(3):
-            res['d%i'%i] = res['d%i'%i][0:res['csm%i'%i].size]
+    for i in range(3):
+        sz = get_diag_len(box, k_save-2+i)
+        res1['d%i'%i] = res1['d%i'%i][0:sz]
+        res1['csm%i'%i] = res1['csm%i'%i][0:sz]
+    for i in range(3):
+        sz = get_diag_len(box, k_save_rev-2+i)
+        res2['d%i'%i] = res2['d%i'%i][0:sz]
+        res2['csm%i'%i] = res2['csm%i'%i][0:sz]
     # Line up the reverse diagonals
     for d in ['d0', 'd1', 'd2', 'csm0', 'csm1', 'csm2']:
         res2[d] = res2[d][::-1]
@@ -329,13 +342,13 @@ def linmdtw(X, Y, box=None, min_dim=500, do_gpu=True, metadata=None):
     # Recursively compute left paths
     left_path = []
     box_left = [box[0], min_idxs[0], box[2], min_idxs[1]]
-    left_path = linmdtw(X, Y, box_left, min_dim, do_gpu, metadata)
+    left_path = linmdtw(X, Y, box_left, min_dim, do_gpu, metadata)[1]
 
     # Recursively compute right paths
     right_path = []
     box_right = [min_idxs[0], box[1], min_idxs[1], box[3]]
-    right_path = linmdtw(X, Y, box_right, min_dim, do_gpu, metadata)
+    right_path = linmdtw(X, Y, box_right, min_dim, do_gpu, metadata)[1]
     
-    return np.concatenate((left_path, right_path[1::, :]), axis=0)
+    return (min_cost, np.concatenate((left_path, right_path[1::, :]), axis=0))
 
     

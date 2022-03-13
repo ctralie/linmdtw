@@ -173,6 +173,8 @@ def dtw_diag_gpu(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debu
         box = [0, X.shape[0]-1, 0, Y.shape[0]-1]
     M = box[1] - box[0] + 1
     N = box[3] - box[2] + 1
+    if k_stop == -1:
+        k_stop = M+N-2
     box_gpu = gpuarray.to_gpu(np.array(box, dtype=np.int32))
     reverse = np.array(reverse, dtype=np.int32)
 
@@ -214,9 +216,7 @@ def dtw_diag_gpu(X, Y, k_save = -1, k_stop = -1, box = None, reverse=False, debu
             res['csm1'] = csm1.get()[0:csm1len]
             res['d2'] = d2.get()
             res['csm2'] = csm2.get()[0:csm2len]
-        if k == k_stop:
-            break
-        if k < M+N-2:
+        if k < k_stop:
             # Rotate buffers
             temp = d0
             d0 = d1

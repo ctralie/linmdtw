@@ -58,14 +58,15 @@ class TestDTW:
         Y = np.zeros_like(X)
         Y[:, 0] = np.cos(2*np.pi*t2)
         Y[:, 1] = np.sin(4*np.pi*t2)
-        path1 = linmdtw.linmdtw(X, Y)
+        cost1, path1 = linmdtw.linmdtw(X, Y)
         path1 = np.array(path1)
-        path2 = linmdtw.dtw_brute_backtrace(X, Y)
+        cost2, path2 = linmdtw.dtw_brute_backtrace(X, Y)
+        assert(np.allclose(cost1, cost2))
         path2 = np.array(path2)
         err = linmdtw.get_alignment_row_col_dists(path1, path2)
         assert(np.mean(err) < 1)
         metadata = {'totalCells':0, 'M':X.shape[0], 'N':Y.shape[0], 'timeStart':time.time()}
-        path3 = linmdtw.linmdtw(X, Y, do_gpu=False, metadata=metadata)
+        _, path3 = linmdtw.linmdtw(X, Y, do_gpu=False, metadata=metadata)
         path3 = np.array(path3)
         err = linmdtw.get_alignment_row_col_dists(path2, path3)
         assert(np.mean(err) < 1)
@@ -86,7 +87,7 @@ class TestDTW:
         t2 = linmdtw.alignmenttools.sample_parameterization_dict(D, 2)
         Y = linmdtw.alignmenttools.get_interpolated_euclidean_timeseries(X, t2)
 
-        path = linmdtw.linmdtw(X, Y)
+        path = linmdtw.linmdtw(X, Y)[1]
         pathorig = linmdtw.alignmenttools.param_to_warppath(t2, N)
         pathorig = np.array(pathorig, dtype=int)
 

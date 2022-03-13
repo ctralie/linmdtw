@@ -5,6 +5,7 @@ from scipy import sparse
 import time
 import dynseqalign
 from .dtw import dtw_brute_backtrace, linmdtw, check_euclidean_inputs
+from .alignmenttools import get_path_cost
 
 def fill_block(A, p, radius, val):
     """
@@ -49,8 +50,7 @@ def _dtw_constrained_occ(X, Y, Occ, debug=False, level=0, do_plot=False):
     
     Returns
     -------
-    path: ndarray(K, 2)
-        The  warping path
+        (float: cost, ndarray(K, 2): The warping path)
     """
     M = X.shape[0]
     N = Y.shape[0]
@@ -116,7 +116,7 @@ def _dtw_constrained_occ(X, Y, Occ, debug=False, level=0, do_plot=False):
     if debug: # pragma: no cover
         return {'path':path, 'S':S, 'P':P}
     else:
-        return path
+        return (get_path_cost(X, Y, path), path)
 
 def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
     """
@@ -141,8 +141,7 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
     
     Returns
     -------
-    path: ndarray(K, 2)
-        The  warping path
+        (float: cost, ndarray(K, 2): The warping path)
     """
     X, Y = check_euclidean_inputs(X, Y)
     minTSsize = radius + 2
@@ -153,7 +152,7 @@ def fastdtw(X, Y, radius, debug=False, level = 0, do_plot=False):
     if M < radius or N < radius:
         return dtw_brute_backtrace(X, Y)
     # Recursive step
-    path = fastdtw(X[0::2, :], Y[0::2, :], radius, debug, level+1, do_plot)
+    cost, path = fastdtw(X[0::2, :], Y[0::2, :], radius, debug, level+1, do_plot)
     if type(path) is dict:
         path = path['path']
     path = np.array(path)
@@ -185,8 +184,7 @@ def cdtw(X, Y, radius, debug=False, do_plot=False):
     
     Returns
     -------
-    path: ndarray(K, 2)
-        The  warping path
+        (float: cost, ndarray(K, 2): The warping path)
     """
     radius = int(max(radius, 1))
     X, Y = check_euclidean_inputs(X, Y)
@@ -269,7 +267,7 @@ def mrmsdtw(X, Y, tau, debug=False, refine=True):
     d = int(np.ceil(np.sqrt(M*N/tau)))
     X2 = np.ascontiguousarray(X[0::d, :])
     Y2 = np.ascontiguousarray(Y[0::d, :])
-    anchors = dtw_brute_backtrace(X2, Y2)
+    anchors = dtw_brute_backtrace(X2, Y2)[1]
     anchors = (np.array(anchors)*d).tolist()
     if anchors[-1][0] < M-1 or anchors[-1][1] < N-1:
         anchors.append([M-1, N-1])
@@ -297,7 +295,7 @@ def mrmsdtw(X, Y, tau, debug=False, refine=True):
         a1 = anchors[i]
         a2 = anchors[i+1]
         box = [a1[0], a2[0], a1[1], a2[1]]
-        pathi = linmdtw(X, Y, box=box)
+        pathi = linmdtw(X, Y, box=box)[1]
         if path.size == 0:
             path = pathi
         else:
@@ -306,7 +304,7 @@ def mrmsdtw(X, Y, tau, debug=False, refine=True):
     # Add last endpoints
     path = np.concatenate((path, np.array([[M-1, N-1]], dtype=int)), axis=0)
     if not refine:
-        return path
+        return (get_path_cost(X, Y, path), path)
     
     ## Step 4: Come up with the set of "white anchors"
     # First choose them to be at the center of each block
@@ -329,7 +327,7 @@ def mrmsdtw(X, Y, tau, debug=False, refine=True):
         a1 = path[wanchors_idx[i][-1]]
         a2 = path[wanchors_idx[i+1][0]]
         box = [a1[0], a2[0], a1[1], a2[1]]
-        pathi = linmdtw(X, Y, box=box)
+        pathi = linmdtw(X, Y, box=box)[1]
         pathret = np.concatenate((pathret, pathi[0:-1, :]), axis=0)
         # If there's a gap in between this box and 
         # the next one, use the path from before
@@ -339,4 +337,4 @@ def mrmsdtw(X, Y, tau, debug=False, refine=True):
             pathret = np.concatenate((pathret, path[i1:i2, :]), axis=0)
     i1 = wanchors_idx[-1][-1]
     pathret = np.concatenate((pathret, path[i1::, :]), axis=0)
-    return pathret
+    return (get_path_cost(X, Y, pathret), pathret)
