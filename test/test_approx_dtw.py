@@ -21,9 +21,9 @@ class TestDTWApprox:
         radius
         """
         X, Y = get_pcs(1000)
-        path1 = np.array(linmdtw.dtw_brute_backtrace(X, Y))
-        path2 = np.array(linmdtw.fastdtw(X, Y, 50))
-        path3 = np.array(linmdtw.fastdtw(X, Y, 5))
+        path1 = np.array(linmdtw.dtw_brute_backtrace(X, Y)[1])
+        path2 = np.array(linmdtw.fastdtw(X, Y, 50)[1])
+        path3 = np.array(linmdtw.fastdtw(X, Y, 5)[1])
         err1 = linmdtw.get_alignment_row_col_dists(path1, path2)
         err2 = linmdtw.get_alignment_row_col_dists(path1, path3)
         assert(np.mean(err1) <= np.mean(err2))
@@ -46,11 +46,11 @@ class TestDTWApprox:
         s = linmdtw.alignmenttools.sample_parameterization_dict(D, 4)
         Y = linmdtw.alignmenttools.get_interpolated_euclidean_timeseries(X, s)
 
-        cost10 = linmdtw.get_path_cost(X, Y, linmdtw.cdtw(X, Y, 10))
-        cost10_T = linmdtw.get_path_cost(Y, X, linmdtw.cdtw(Y, X, 10))
+        cost10, _ = linmdtw.cdtw(X, Y, 10)
+        cost10_T, _ = linmdtw.cdtw(Y, X, 10)
         assert(cost10 == cost10_T)
-        cost4 = linmdtw.get_path_cost(X, Y, linmdtw.cdtw(X, Y, 4))
-        cost4_T = linmdtw.get_path_cost(Y, X, linmdtw.cdtw(Y, X, 4))
+        cost4, _ = linmdtw.cdtw(X, Y, 4)
+        cost4_T, _ = linmdtw.cdtw(Y, X, 4)
         assert(cost4 == cost4_T)
         assert(cost10 < cost4)
         assert(cost10_T < cost4_T)
@@ -62,11 +62,11 @@ class TestDTWApprox:
         is decreased in mrmsdtw
         """
         X, Y = get_pcs(1000)
-        path1 = linmdtw.dtw_brute_backtrace(X, Y)
+        path1 = linmdtw.dtw_brute_backtrace(X, Y)[1]
         path1 = np.array(path1)
-        path2 = linmdtw.mrmsdtw(X, Y, tau=10**4)
+        path2 = linmdtw.mrmsdtw(X, Y, tau=10**4)[1]
         path2 = np.array(path2)
-        path3 = linmdtw.mrmsdtw(X, Y, tau=10**2)
+        path3 = linmdtw.mrmsdtw(X, Y, tau=10**2)[1]
         path3 = np.array(path3)
         err1 = linmdtw.get_alignment_row_col_dists(path1, path2)
         err2 = linmdtw.get_alignment_row_col_dists(path1, path3)
@@ -78,11 +78,11 @@ class TestDTWApprox:
         Test that error is lower after refinement
         """
         X, Y = get_pcs(1000)
-        path1 = linmdtw.dtw_brute_backtrace(X, Y)
+        path1 = linmdtw.dtw_brute_backtrace(X, Y)[1]
         path1 = np.array(path1)
-        path2 = linmdtw.mrmsdtw(X, Y, tau=10**3, refine=True)
+        path2 = linmdtw.mrmsdtw(X, Y, tau=10**3, refine=True)[1]
         path2 = np.array(path2)
-        path3 = linmdtw.mrmsdtw(X, Y, tau=10**3, refine=False)
+        path3 = linmdtw.mrmsdtw(X, Y, tau=10**3, refine=False)[1]
         path3 = np.array(path3)
         err1 = linmdtw.get_alignment_row_col_dists(path1, path2)
         err2 = linmdtw.get_alignment_row_col_dists(path1, path3)
