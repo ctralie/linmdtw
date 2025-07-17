@@ -318,7 +318,7 @@ def linmdtw(X, Y, box=None, min_dim=500, do_gpu=True, metadata=None):
         res1['d%i'%i] = res1['d%i'%i][0:sz]
         res1['csm%i'%i] = res1['csm%i'%i][0:sz]
     for i in range(3):
-        sz = get_diag_len(box, k_save_rev-2+i)
+        sz = get_diag_len(box, k_save_rev-i)
         res2['d%i'%i] = res2['d%i'%i][0:sz]
         res2['csm%i'%i] = res2['csm%i'%i][0:sz]
     # Line up the reverse diagonals
